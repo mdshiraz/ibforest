@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IB Forest — Tribal Tree</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1209; --paper: #f5f0e8; --sepia: #8b6914;
+  --sepia-light: #c9a84c; --sepia-pale: #f0e6c8;
+  --rust: #7a3b1e; --muted: #6b5e4a; --border: #d4c4a0;
+  --ai-bg: #fff9f0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Source Sans 3", sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; }
+.stripe { height: 5px; background: repeating-linear-gradient(90deg,var(--sepia) 0,var(--sepia) 12px,var(--sepia-light) 12px,var(--sepia-light) 14px,var(--rust) 14px,var(--rust) 26px,var(--sepia-light) 26px,var(--sepia-light) 28px); }
+header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; }
+.logo { font-size: 40px; }
+.htext h1 { font-family: "Playfair Display", serif; font-size: 26px; color: var(--sepia); }
+.htext p { font-size: 12px; color: var(--muted); }
+.hbadge { margin-left: auto; text-align: right; font-size: 11px; color: var(--muted); }
+.hbadge strong { display: block; font-size: 15px; color: var(--sepia); }
+
+/* Loading */
+#loading { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+.spin { width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--sepia);border-radius:50%;animation:spin 0.8s linear infinite; }
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Main layout */
+#app { flex:1; display:none; flex-direction:column; }
+
+/* Search bar */
+.searchbar { padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--paper); }
+.search-inner { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; }
+#search-input { flex:1; padding:10px 16px; border:1.5px solid var(--border); border-radius:8px; background:var(--ai-bg); font-size:15px; font-family:"Source Sans 3",sans-serif; color:var(--ink); outline:none; }
+#search-input:focus { border-color:var(--sepia-light); }
+.btn { padding:10px 20px; background:var(--sepia); color:var(--paper); border:none; border-radius:8px; font-size:14px; font-family:"Source Sans 3",sans-serif; cursor:pointer; transition:background 0.15s; white-space:nowrap; }
+.btn:hover { background:var(--rust); }
+.btn.outline { background:transparent; color:var(--sepia); border:1.5px solid var(--border); }
+.btn.outline:hover { background:var(--sepia-pale); }
+
+/* Content area */
+#content { flex:1; overflow-y:auto; padding:24px; max-width:760px; width:100%; margin:0 auto; }
+
+/* Quick chips */
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.chip { padding:6px 14px; background:var(--ai-bg); border:1px solid var(--border); border-radius:20px; font-size:13px; color:var(--sepia); cursor:pointer; transition:all 0.15s; }
+.chip:hover { background:var(--sepia-pale); border-color:var(--sepia-light); }
+
+/* Cards */
+.card { background:var(--ai-bg); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:14px; }
+.card-title { font-family:"Playfair Display",serif; font-size:18px; color:var(--sepia); margin-bottom:4px; }
+.card-sub { font-size:13px; color:var(--muted); margin-bottom:12px; }
+.card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; margin-bottom:12px; }
+.fact { background:var(--sepia-pale); border-radius:8px; padding:8px 12px; }
+.fact-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.fact-value { font-size:14px; color:var(--ink); margin-top:2px; }
+.section-title { font-size:12px; font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin:14px 0 8px; }
+.person-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; background:var(--paper); border:1px solid var(--border); border-radius:20px; font-size:13px; color:var(--ink); cursor:pointer; margin:3px; transition:all 0.15s; }
+.person-pill:hover { background:var(--sepia-pale); border-color:var(--sepia-light); color:var(--sepia); }
+.person-pill .sex { font-size:10px; color:var(--muted); }
+.gen-label { font-size:11px; font-weight:500; color:var(--sepia); background:var(--sepia-pale); padding:2px 8px; border-radius:10px; display:inline-block; margin:8px 0 4px; }
+.results-count { font-size:13px; color:var(--muted); margin-bottom:12px; }
+.empty { text-align:center; padding:40px; color:var(--muted); }
+.empty .ei { font-size:36px; margin-bottom:10px; }
+.rel-path { background:var(--sepia-pale); border-radius:8px; padding:12px 16px; font-size:14px; color:var(--sepia); margin-top:8px; }
+.note-box { background:#fffbf0; border-left:3px solid var(--sepia-light); padding:10px 14px; border-radius:0 8px 8px 0; font-size:13px; color:var(--muted); margin-top:10px; font-style:italic; }
+.back-btn { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--sepia); cursor:pointer; margin-bottom:16px; padding:6px 12px; border-radius:6px; transition:background 0.15s; }
+.back-btn:hover { background:var(--sepia-pale); }
+
+/* Relationship finder */
+.rel-finder { background:var(--ai-bg); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:14px; }
+.rel-finder h3 { font-family:"Playfair Display",serif; font-size:16px; color:var(--sepia); margin-bottom:12px; }
+.rel-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.rel-input { flex:1; min-width:140px; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--paper); font-size:14px; font-family:"Source Sans 3",sans-serif; color:var(--ink); outline:none; }
+.rel-input:focus { border-color:var(--sepia-light); }
+.rel-result { margin-top:12px; font-size:15px; }
+
+@media(max-width:600px) {
+  header { padding:14px 16px; }
+  #content { padding:16px; }
+  .searchbar { padding:12px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<header>
+  <div class="logo">🌳</div>
+  <div class="htext">
+    <h1>IB Forest</h1>
+    <p>Our Tribal Family Tree</p>
+  </div>
+  <div class="hbadge" id="stats-badge"><strong>...</strong>loading</div>
+</header>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div style="font-size:14px;color:var(--muted)">Loading family tree...</div>
+</div>
+
+<div id="app">
+  <div class="searchbar">
+    <div class="search-inner">
+      <input id="search-input" type="text" placeholder="Search by name..." autocomplete="off" />
+      <button class="btn" onclick="doSearch()">Search</button>
+    </div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<script src="tribe_data.js"></script>
+<script>
+(function() {
+
+var T = null; // tribe data
+var history = []; // navigation history
+
+// ── Analytics ────────────────────────────────────────────────────────────────
+var SUPABASE_URL = 'https://phhzdexhazfltugsilfq.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoaHpkZXhoYXpmbHR1Z3NpbGZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjUxNjYsImV4cCI6MjA5MzEwMTE2Nn0.L-uNTJJJrII5HpqZtmpQRgTO5Vla5ibb0NrPzemIEKI';
+
+function logEvent(type, data) {
+  if (SUPABASE_URL.indexOf('REPLACE') >= 0) return; // not configured yet
+  var payload = {
+    event_type: type,
+    data: JSON.stringify(data || {}),
+    referrer: document.referrer || 'direct',
+    user_agent: navigator.userAgent,
+    session_id: getSession(),
+    created_at: new Date().toISOString()
+  };
+  fetch(SUPABASE_URL + '/rest/v1/analytics', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
+  }).catch(function(){});
+}
+
+function getSession() {
+  var s = sessionStorage.getItem('ibf_session');
+  if (!s) {
+    s = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem('ibf_session', s);
+  }
+  return s;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+function init() {
+  if (!window.TRIBE) {
+    document.getElementById('loading').innerHTML = '<div style="color:var(--rust);padding:20px;text-align:center">Error loading tribe data. Make sure tribe_data.js is in the same folder.</div>';
+    return;
+  }
+  T = window.TRIBE;
+  var iCount = Object.keys(T.i).length;
+  var fCount = Object.keys(T.f).length;
+  document.getElementById('stats-badge').innerHTML = '<strong>' + iCount.toLocaleString() + '</strong>people &middot; ' + fCount + ' families';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  logEvent('page_view', {
+    referrer: document.referrer || 'direct',
+    url: window.location.href
+  });
+  showHome();
+}
+
+function name(id) {
+  return T.i[id] ? T.i[id].n : id;
+}
+
+function sexIcon(s) {
+  return s === 'M' ? '&#9794;' : s === 'F' ? '&#9792;' : '';
+}
+
+function formatDate(d, p) {
+  if (!d && !p) return '';
+  return [d, p].filter(Boolean).join(', ');
+}
+
+function getSpouseFamilies(pid) {
+  var result = [];
+  for (var fid in T.f) {
+    var f = T.f[fid];
+    if (f.h === pid || f.w === pid) result.push(fid);
+  }
+  return result;
+}
+
+function getChildFamilies(pid) {
+  var result = [];
+  for (var fid in T.f) {
+    if (T.f[fid].c.indexOf(pid) >= 0) result.push(fid);
+  }
+  return result;
+}
+
+function pillHTML(pid) {
+  if (!T.i[pid]) return '';
+  var p = T.i[pid];
+  return '<span class="person-pill" onclick="showPerson(\'' + pid + '\')">' + p.n + '<span class="sex">' + sexIcon(p.s) + '</span></span>';
+}
+
+function showHome() {
+  history = [];
+  var html = '<div class="chips">';
+  var chips = [
+    'Search for Shiraz Anwar',
+    'Ancestors of Dr. Anwar Ahmad',
+    'Children of Haji Zameer Ahmad',
+    'People born in Lucknow',
+    'People born in Kanpur',
+    'Find relationship between two people'
+  ];
+  chips.forEach(function(c) {
+    html += '<div class="chip" onclick="handleChip(\'' + c + '\')">' + c + '</div>';
+  });
+  html += '</div>';
+
+  // Relationship finder
+  html += '<div class="rel-finder">';
+  html += '<h3>&#128270; Find how two people are related</h3>';
+  html += '<div class="rel-row">';
+  html += '<input class="rel-input" id="rel1" placeholder="Person 1 name..." />';
+  html += '<span style="color:var(--muted);font-size:13px">and</span>';
+  html += '<input class="rel-input" id="rel2" placeholder="Person 2 name..." />';
+  html += '<button class="btn" onclick="findRel()">Find</button>';
+  html += '</div><div class="rel-result" id="rel-result"></div></div>';
+
+  // Stats
+  html += '<div class="card"><div class="card-title">About this tree</div>';
+  html += '<div class="card-grid">';
+  var iCount = Object.keys(T.i).length;
+  var fCount = Object.keys(T.f).length;
+  var withBirth = Object.values(T.i).filter(function(p){return p.bd;}).length;
+  var females = Object.values(T.i).filter(function(p){return p.s==='F';}).length;
+  var males = Object.values(T.i).filter(function(p){return p.s==='M';}).length;
+  var places = new Set();
+  Object.values(T.i).forEach(function(p){ if(p.bp) places.add(p.bp); if(p.dp) places.add(p.dp); });
+  html += fact('Total people', iCount.toLocaleString());
+  html += fact('Family units', fCount);
+  html += fact('Males', males.toLocaleString());
+  html += fact('Females', females.toLocaleString());
+  html += fact('With birth dates', withBirth);
+  html += fact('Known locations', places.size);
+  html += '</div></div>';
+
+  setContent(html);
+}
+
+function fact(label, value) {
+  return '<div class="fact"><div class="fact-label">' + label + '</div><div class="fact-value">' + value + '</div></div>';
+}
+
+function handleChip(text) {
+  if (text === 'Find relationship between two people') {
+    document.getElementById('rel1') && document.getElementById('rel1').focus();
+    return;
+  }
+  if (text.startsWith('Search for ')) {
+    document.getElementById('search-input').value = text.replace('Search for ', '');
+    doSearch();
+    return;
+  }
+  if (text.startsWith('Ancestors of ')) {
+    var n = text.replace('Ancestors of ', '');
+    var results = searchByName(n);
+    if (results.length > 0) showAncestors(results[0], 4);
+    return;
+  }
+  if (text.startsWith('Children of ')) {
+    var n = text.replace('Children of ', '');
+    var results = searchByName(n);
+    if (results.length > 0) showDescendants(results[0], 2);
+    return;
+  }
+  if (text.startsWith('People born in ')) {
+    var place = text.replace('People born in ', '');
+    showByPlace(place);
+    return;
+  }
+  document.getElementById('search-input').value = text;
+  doSearch();
+}
+
+function searchByName(query) {
+  if (!query || query.trim().length < 2) return [];
+  var q = query.trim().toLowerCase();
+  var results = [];
+  for (var id in T.i) {
+    var n = (T.i[id].n || '').toLowerCase();
+    if (n.indexOf(q) >= 0) results.push(id);
+  }
+  return results;
+}
+
+function doSearch() {
+  var q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  var results = searchByName(q);
+  history.push({type:'search', q:q});
+
+  var html = backBtn();
+  if (results.length === 0) {
+    logEvent('search_not_found', {query: q});
+    html += '<div class="empty"><div class="ei">&#128269;</div><p>No results for "' + esc(q) + '"</p></div>';
+  } else {
+    logEvent('search_found', {query: q, result_count: results.length});
+    html += '<div class="results-count">Found ' + results.length + ' result' + (results.length!==1?'s':'') + ' for "' + esc(q) + '"</div>';
+    results.forEach(function(id) {
+      var p = T.i[id];
+      var born = formatDate(p.bd, p.bp);
+      var died = formatDate(p.dd, p.dp);
+      html += '<div class="card" style="cursor:pointer" onclick="showPerson(\'' + id + '\')">';
+      html += '<div class="card-title">' + esc(p.n) + ' <span style="font-size:14px;font-weight:400">' + sexIcon(p.s) + '</span></div>';
+      html += '<div class="card-sub">' + id + '</div>';
+      if (born || died) {
+        html += '<div class="card-grid">';
+        if (born) html += fact('Born', born);
+        if (died) html += fact('Died', died);
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+  }
+  setContent(html);
+}
+
+function showPerson(pid) {
+  var p = T.i[pid];
+  if (!p) return;
+  logEvent('view_person', {id: pid, name: p.n});
+  history.push({type:'person', pid:pid});
+
+  var html = backBtn();
+  html += '<div class="card">';
+  html += '<div class="card-title">' + esc(p.n) + ' <span style="font-size:16px;font-weight:400">' + sexIcon(p.s) + '</span></div>';
+  html += '<div class="card-sub">' + pid + '</div>';
+
+  html += '<div class="card-grid">';
+  var born = formatDate(p.bd, p.bp);
+  var died = formatDate(p.dd, p.dp);
+  if (born) html += fact('Born', born);
+  if (died) html += fact('Died', died);
+  if (!born && !died) html += fact('Dates', 'Not recorded');
+  html += '</div>';
+
+  if (p.nt && p.nt.trim()) {
+    html += '<div class="note-box">' + esc(p.nt.replace(/<br>/g,' ').replace(/<[^>]+>/g,'')) + '</div>';
+  }
+
+  // Parents
+  var cfams = getChildFamilies(pid);
+  if (cfams.length > 0) {
+    html += '<div class="section-title">Parents</div>';
+    cfams.forEach(function(fid) {
+      var f = T.f[fid];
+      if (f.h) html += pillHTML(f.h);
+      if (f.w) html += pillHTML(f.w);
+    });
+  }
+
+  // Siblings
+  var siblings = [];
+  cfams.forEach(function(fid) {
+    T.f[fid].c.forEach(function(cid) { if (cid !== pid && siblings.indexOf(cid) < 0) siblings.push(cid); });
+  });
+  if (siblings.length > 0) {
+    html += '<div class="section-title">Siblings (' + siblings.length + ')</div>';
+    siblings.forEach(function(sid) { html += pillHTML(sid); });
+  }
+
+  // Marriages
+  var sfams = getSpouseFamilies(pid);
+  sfams.forEach(function(fid) {
+    var f = T.f[fid];
+    var spouseId = f.h === pid ? f.w : f.h;
+    var marr = formatDate(f.md, f.mp);
+    html += '<div class="section-title">Married' + (marr ? ' — ' + marr : '') + '</div>';
+    if (spouseId) html += pillHTML(spouseId);
+    if (f.c.length > 0) {
+      html += '<div class="section-title">Children (' + f.c.length + ')</div>';
+      f.c.forEach(function(cid) { html += pillHTML(cid); });
+    }
+  });
+
+  html += '</div>';
+
+  // Action buttons
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">';
+  html += '<button class="btn" onclick="showAncestors(\'' + pid + '\', 4)">&#8593; Ancestors (4 gen)</button>';
+  html += '<button class="btn outline" onclick="showDescendants(\'' + pid + '\', 3)">&#8595; Descendants (3 gen)</button>';
+  html += '</div>';
+
+  setContent(html);
+}
+
+function showAncestors(pid, gens) {
+  var p = T.i[pid];
+  if (!p) return;
+  history.push({type:'ancestors', pid:pid, gens:gens});
+
+  var html = backBtn();
+  html += '<div class="card">';
+  html += '<div class="card-title">Ancestors of ' + esc(p.n) + '</div>';
+  html += '<div class="card-sub">Up to ' + gens + ' generations back</div>';
+
+  var byGen = {};
+  function recurse(id, gen) {
+    if (gen > gens) return;
+    var cfams = getChildFamilies(id);
+    cfams.forEach(function(fid) {
+      var f = T.f[fid];
+      [f.h, f.w].forEach(function(aid) {
+        if (!aid) return;
+        if (!byGen[gen]) byGen[gen] = [];
+        if (byGen[gen].indexOf(aid) < 0) {
+          byGen[gen].push(aid);
+          recurse(aid, gen + 1);
+        }
+      });
+    });
+  }
+  recurse(pid, 1);
+
+  var genNames = ['', 'Parents', 'Grandparents', 'Great-grandparents', 'Great-great-grandparents', 'Ancestors (5th gen)'];
+  var total = 0;
+  for (var g = 1; g <= gens; g++) {
+    if (byGen[g] && byGen[g].length > 0) {
+      html += '<div class="gen-label">' + (genNames[g] || 'Gen ' + g) + ' (' + byGen[g].length + ')</div><br>';
+      byGen[g].forEach(function(aid) { html += pillHTML(aid); total++; });
+      html += '<br>';
+    }
+  }
+  if (total === 0) html += '<p style="color:var(--muted);font-size:14px">No ancestor data recorded.</p>';
+  else html += '<div style="margin-top:12px;font-size:13px;color:var(--muted)">' + total + ' ancestors found</div>';
+  html += '</div>';
+  setContent(html);
+}
+
+function showDescendants(pid, gens) {
+  var p = T.i[pid];
+  if (!p) return;
+  history.push({type:'desc', pid:pid, gens:gens});
+
+  var html = backBtn();
+  html += '<div class="card">';
+  html += '<div class="card-title">Descendants of ' + esc(p.n) + '</div>';
+  html += '<div class="card-sub">Up to ' + gens + ' generations</div>';
+
+  var byGen = {};
+  var visited = {};
+  function recurse(id, gen) {
+    if (gen > gens || visited[id]) return;
+    visited[id] = true;
+    var sfams = getSpouseFamilies(id);
+    sfams.forEach(function(fid) {
+      T.f[fid].c.forEach(function(cid) {
+        if (!byGen[gen]) byGen[gen] = [];
+        if (byGen[gen].indexOf(cid) < 0) byGen[gen].push(cid);
+        recurse(cid, gen + 1);
+      });
+    });
+  }
+  recurse(pid, 1);
+
+  var genNames = ['', 'Children', 'Grandchildren', 'Great-grandchildren', 'Great-great-grandchildren'];
+  var total = 0;
+  for (var g = 1; g <= gens; g++) {
+    if (byGen[g] && byGen[g].length > 0) {
+      html += '<div class="gen-label">' + (genNames[g] || 'Gen ' + g) + ' (' + byGen[g].length + ')</div><br>';
+      byGen[g].forEach(function(did) { html += pillHTML(did); total++; });
+      html += '<br>';
+    }
+  }
+  if (total === 0) html += '<p style="color:var(--muted);font-size:14px">No descendants recorded.</p>';
+  else html += '<div style="margin-top:12px;font-size:13px;color:var(--muted)">' + total + ' descendants found</div>';
+  html += '</div>';
+  setContent(html);
+}
+
+function showByPlace(place) {
+  history.push({type:'place', place:place});
+  var results = [];
+  for (var id in T.i) {
+    var p = T.i[id];
+    if ((p.bp || '').toLowerCase().indexOf(place.toLowerCase()) >= 0) results.push(id);
+  }
+
+  var html = backBtn();
+  html += '<div class="results-count"><strong>' + results.length + ' people</strong> born in ' + esc(place) + '</div>';
+  results.forEach(function(id) {
+    var p = T.i[id];
+    html += '<div class="card" style="cursor:pointer;padding:12px 18px" onclick="showPerson(\'' + id + '\')">';
+    html += '<span style="font-size:15px">' + esc(p.n) + '</span>';
+    if (p.bd) html += '<span style="font-size:13px;color:var(--muted);margin-left:10px">b. ' + p.bd + '</span>';
+    html += '</div>';
+  });
+  if (results.length === 0) html += '<div class="empty"><div class="ei">&#127757;</div><p>No records for ' + esc(place) + '</p></div>';
+  setContent(html);
+}
+
+function findRel() {
+  var n1 = document.getElementById('rel1').value.trim();
+  var n2 = document.getElementById('rel2').value.trim();
+  var r1 = searchByName(n1);
+  var r2 = searchByName(n2);
+  var el = document.getElementById('rel-result');
+
+  if (!n1 || !n2) { el.innerHTML = '<span style="color:var(--muted)">Enter both names.</span>'; return; }
+  if (r1.length === 0) { el.innerHTML = '<span style="color:var(--rust)">Could not find: ' + esc(n1) + '</span>'; return; }
+  if (r2.length === 0) { el.innerHTML = '<span style="color:var(--rust)">Could not find: ' + esc(n2) + '</span>'; return; }
+
+  var id1 = r1[0], id2 = r2[0];
+  if (id1 === id2) { el.innerHTML = '<div class="rel-path">Same person!</div>'; return; }
+
+  // BFS
+  function getConnected(pid) {
+    var conn = [];
+    getChildFamilies(pid).forEach(function(fid) {
+      var f = T.f[fid];
+      if (f.h && f.h !== pid) conn.push({id:f.h, rel:'parent'});
+      if (f.w && f.w !== pid) conn.push({id:f.w, rel:'parent'});
+    });
+    getSpouseFamilies(pid).forEach(function(fid) {
+      var f = T.f[fid];
+      var sp = f.h === pid ? f.w : f.h;
+      if (sp) conn.push({id:sp, rel:'spouse'});
+      f.c.forEach(function(cid) { conn.push({id:cid, rel:'child'}); });
+    });
+    return conn;
+  }
+
+  var queue = [{id:id1, path:[{id:id1,rel:'self'}]}];
+  var visited = {}; visited[id1] = true;
+  var found = null;
+  var MAX = 10;
+
+  while (queue.length > 0 && !found) {
+    var cur = queue.shift();
+    if (cur.path.length > MAX) continue;
+    var connected = getConnected(cur.id);
+    for (var i = 0; i < connected.length; i++) {
+      var next = connected[i];
+      if (visited[next.id]) continue;
+      var newPath = cur.path.concat([{id:next.id, rel:next.rel}]);
+      if (next.id === id2) { found = newPath; break; }
+      visited[next.id] = true;
+      queue.push({id:next.id, path:newPath});
+    }
+  }
+
+  if (!found) {
+    logEvent('relationship_not_found', {person1: name(id1), person2: name(id2)});
+    el.innerHTML = '<div class="rel-path">No connection found within ' + MAX + ' degrees between <strong>' + esc(name(id1)) + '</strong> and <strong>' + esc(name(id2)) + '</strong>.</div>';
+    return;
+  }
+
+  var rels = found.slice(1).map(function(x){return x.rel;});
+  var ups = rels.filter(function(r){return r==='parent';}).length;
+  var downs = rels.filter(function(r){return r==='child';}).length;
+  var spouses = rels.filter(function(r){return r==='spouse';}).length;
+
+  var desc = '';
+  if (spouses===1 && rels.length===1) desc='spouse';
+  else if (ups===1&&downs===0) desc='parent';
+  else if (ups===0&&downs===1) desc='child';
+  else if (ups===1&&downs===1&&rels[0]==='parent') desc='sibling';
+  else if (ups===2&&downs===0) desc='grandparent';
+  else if (ups===0&&downs===2) desc='grandchild';
+  else if (ups===2&&downs===1) desc='uncle / aunt';
+  else if (ups===1&&downs===2) desc='nephew / niece';
+  else if (ups===3&&downs===0) desc='great-grandparent';
+  else if (ups===0&&downs===3) desc='great-grandchild';
+  else if (ups===2&&downs===2) desc='1st cousin';
+  else if (ups===3&&downs===3) desc='2nd cousin';
+  else if ((ups===3&&downs===2)||(ups===2&&downs===3)) desc='1st cousin once removed';
+  else desc = ups + ' up, ' + downs + ' down (' + (found.length-1) + ' steps)';
+
+  var pathStr = found.map(function(x){return name(x.id);}).join(' → ');
+  logEvent('relationship_found', {person1: name(id1), person2: name(id2), relationship: desc, steps: found.length-1});
+  el.innerHTML = '<div class="rel-path"><strong>' + esc(name(id1)) + '</strong> is the <strong>' + desc + '</strong> of <strong>' + esc(name(id2)) + '</strong><br><span style="font-size:12px;opacity:0.7;margin-top:4px;display:block">' + esc(pathStr) + '</span></div>';
+}
+
+function backBtn() {
+  if (history.length <= 1) return '';
+  return '<div class="back-btn" onclick="goBack()">&#8592; Back</div>';
+}
+
+function goBack() {
+  history.pop();
+  var prev = history[history.length - 1];
+  if (!prev || prev.type === 'home') { history = []; showHome(); return; }
+  if (prev.type === 'person') { history.pop(); showPerson(prev.pid); }
+  else if (prev.type === 'search') { history.pop(); document.getElementById('search-input').value = prev.q; doSearch(); }
+  else if (prev.type === 'ancestors') { history.pop(); showAncestors(prev.pid, prev.gens); }
+  else if (prev.type === 'desc') { history.pop(); showDescendants(prev.pid, prev.gens); }
+  else if (prev.type === 'place') { history.pop(); showByPlace(prev.place); }
+  else { history = []; showHome(); }
+}
+
+function setContent(html) {
+  var el = document.getElementById('content');
+  el.innerHTML = html;
+  el.scrollTop = 0;
+  // Re-bind search
+  var si = document.getElementById('search-input');
+  if (si) {
+    si.onkeydown = function(e) { if(e.key==='Enter') doSearch(); };
+  }
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.showPerson = showPerson;
+window.showAncestors = showAncestors;
+window.showDescendants = showDescendants;
+window.doSearch = doSearch;
+window.findRel = findRel;
+window.goBack = goBack;
+window.handleChip = handleChip;
+
+// Wait for tribe_data.js to load
+if (window.TRIBE) { init(); }
+else { window.addEventListener('load', init); }
+
+})();
+</script>
+</body>
+</html>
