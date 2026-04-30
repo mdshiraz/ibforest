@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IB Forest — Family Tree</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1a1209;--paper:#f5f0e8;--sepia:#8b6914;--sepia-light:#c9a84c;--sepia-pale:#f0e6c8;--rust:#7a3b1e;--muted:#6b5e4a;--border:#d4c4a0;--ai-bg:#fff9f0;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Source Sans 3",sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;}
+.stripe{height:5px;background:repeating-linear-gradient(90deg,var(--sepia) 0,var(--sepia) 12px,var(--sepia-light) 12px,var(--sepia-light) 14px,var(--rust) 14px,var(--rust) 26px,var(--sepia-light) 26px,var(--sepia-light) 28px);}
+header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;}
+.logo{font-size:38px;}
+.htitle h1{font-family:"Playfair Display",serif;font-size:24px;color:var(--sepia);}
+.htitle p{font-size:12px;color:var(--muted);}
+.hbadge{margin-left:auto;font-size:11px;color:var(--muted);text-align:right;line-height:1.6;}
+.hbadge strong{display:block;font-size:15px;color:var(--sepia);}
+
+/* Key screen */
+#key-screen{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+.key-card{background:var(--ai-bg);border:1px solid var(--border);border-radius:12px;padding:40px 48px;max-width:460px;width:100%;text-align:center;box-shadow:0 4px 32px rgba(139,105,20,0.08);}
+.key-card .icon{font-size:40px;margin-bottom:16px;}
+.key-card h2{font-family:"Playfair Display",serif;font-size:22px;color:var(--sepia);margin-bottom:8px;}
+.key-card p{font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
+.key-row{display:flex;gap:10px;}
+.key-row input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--paper);font-size:15px;font-family:"Source Sans 3",sans-serif;color:var(--ink);outline:none;}
+.key-row input:focus{border-color:var(--sepia-light);}
+.key-error{color:var(--rust);font-size:13px;margin-top:10px;display:none;}
+
+/* Chat */
+#chat-screen{flex:1;display:none;flex-direction:column;}
+#messages{flex:1;overflow-y:auto;padding:24px;max-width:780px;width:100%;margin:0 auto;}
+.msg{display:flex;gap:12px;margin-bottom:20px;animation:fadeUp 0.25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse;}
+.msg-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-top:2px;}
+.msg.user .msg-avatar{background:var(--sepia);color:var(--paper);font-size:13px;font-weight:600;font-family:"Playfair Display",serif;}
+.msg.ai .msg-avatar{background:var(--sepia-pale);border:1px solid var(--border);}
+.msg-bubble{max-width:82%;padding:12px 16px;border-radius:12px;font-size:15px;line-height:1.65;}
+.msg.user .msg-bubble{background:var(--sepia);color:var(--paper);border-bottom-right-radius:4px;}
+.msg.ai .msg-bubble{background:var(--ai-bg);border:1px solid var(--border);color:var(--ink);border-bottom-left-radius:4px;}
+.msg.ai .msg-bubble p{margin-bottom:8px;}
+.msg.ai .msg-bubble p:last-child{margin-bottom:0;}
+.msg.ai .msg-bubble strong{color:var(--sepia);}
+.msg.ai .msg-bubble ul,.msg.ai .msg-bubble ol{padding-left:18px;margin:6px 0;}
+.msg.ai .msg-bubble li{margin-bottom:4px;}
+.msg.ai .msg-bubble .tool-call{background:var(--sepia-pale);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--muted);margin-bottom:6px;font-style:italic;}
+
+.typing-dots{display:flex;gap:5px;align-items:center;padding:4px 0;}
+.typing-dots span{width:7px;height:7px;border-radius:50%;background:var(--sepia-light);animation:dot-bounce 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:0.2s;}
+.typing-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dot-bounce{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}
+
+.suggestions{max-width:780px;margin:0 auto 16px;padding:0 24px;display:flex;flex-wrap:wrap;gap:8px;}
+.sug-chip{padding:7px 14px;background:var(--ai-bg);border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--sepia);cursor:pointer;font-family:"Source Sans 3",sans-serif;transition:all 0.15s;white-space:nowrap;}
+.sug-chip:hover{background:var(--sepia-pale);border-color:var(--sepia-light);}
+
+.input-bar{border-top:1px solid var(--border);background:var(--paper);padding:16px 24px;}
+.input-inner{max-width:780px;margin:0 auto;display:flex;gap:10px;align-items:flex-end;}
+#user-input{flex:1;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--ai-bg);font-size:15px;font-family:"Source Sans 3",sans-serif;color:var(--ink);resize:none;min-height:46px;max-height:140px;outline:none;transition:border-color 0.2s;line-height:1.5;}
+#user-input:focus{border-color:var(--sepia-light);}
+#user-input::placeholder{color:#b0a080;}
+#send-btn{width:46px;height:46px;border-radius:10px;background:var(--sepia);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;flex-shrink:0;}
+#send-btn:hover{background:var(--rust);}
+#send-btn:disabled{background:var(--border);cursor:not-allowed;}
+#send-btn svg{width:18px;height:18px;fill:var(--paper);}
+.input-hint{text-align:center;font-size:11px;color:var(--muted);margin-top:8px;}
+
+.welcome-banner{background:var(--sepia-pale);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;gap:16px;}
+.welcome-banner .w-icon{font-size:28px;flex-shrink:0;}
+.welcome-banner h3{font-family:"Playfair Display",serif;font-size:17px;color:var(--sepia);margin-bottom:6px;}
+.welcome-banner p{font-size:13.5px;color:var(--muted);line-height:1.6;}
+
+button.primary{padding:10px 22px;background:var(--sepia);color:var(--paper);border:none;border-radius:8px;font-size:14px;font-family:"Source Sans 3",sans-serif;font-weight:500;cursor:pointer;transition:background 0.15s;}
+button.primary:hover{background:var(--rust);}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<header>
+  <div class="logo">🌳</div>
+  <div class="htitle"><h1>IB Forest</h1><p>Our Tribal Family Tree</p></div>
+  <div class="hbadge"><strong>3,200</strong>people · 1,003 families</div>
+</header>
+
+<div id="key-screen">
+  <div class="key-card">
+    <div class="icon">🔑</div>
+    <h2>Enter your API key</h2>
+    <p>Stored only in your browser. Never sent anywhere except directly to Anthropic.</p>
+    <div class="key-row">
+      <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off"/>
+      <button class="primary" id="start-btn">Start</button>
+    </div>
+    <div class="key-error" id="key-error">Invalid key format.</div>
+    <p style="margin-top:18px;font-size:12px;color:var(--muted)">Get a key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--sepia)">console.anthropic.com</a></p>
+  </div>
+</div>
+
+<div id="chat-screen">
+  <div id="messages">
+    <div class="welcome-banner">
+      <div class="w-icon">📜</div>
+      <div>
+        <h3>Assalamu Alaikum! Welcome to IB Forest</h3>
+        <p>Ask me anything — search for relatives, find how people are related, explore ancestors and descendants, or find common ancestors. I use real computation on the family database, not guesswork.</p>
+      </div>
+    </div>
+  </div>
+  <div class="suggestions" id="suggestions">
+    <div class="sug-chip" onclick="sendSuggestion(this)">Who is Shiraz Anwar?</div>
+    <div class="sug-chip" onclick="sendSuggestion(this)">Common ancestor of Bushra Dilshad and Neha Sarwat</div>
+    <div class="sug-chip" onclick="sendSuggestion(this)">Ancestors of Dr. Anwar Ahmad</div>
+    <div class="sug-chip" onclick="sendSuggestion(this)">How is Shiraz Anwar related to Neha Sarwat?</div>
+    <div class="sug-chip" onclick="sendSuggestion(this)">Children of Haji Zameer Ahmad</div>
+    <div class="sug-chip" onclick="sendSuggestion(this)">Find all people born in Lucknow</div>
+  </div>
+  <div class="input-bar">
+    <div class="input-inner">
+      <textarea id="user-input" rows="1" placeholder="Ask about any family member..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button id="send-btn" title="Send"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+    </div>
+    <div class="input-hint">Powered by Claude with real database queries · Your API key stays in your browser</div>
+  </div>
+</div>
+
+<script src="tribe_data.js"></script>
+<script>
+(function(){
+
+// ── Tribe data & tools ────────────────────────────────────────────────────
+var T = null;
+
+function initData() {
+  if (!window.TRIBE) return false;
+  T = window.TRIBE;
+  return true;
+}
+
+// ── Tool implementations (run in browser against tribe data) ─────────────
+
+function searchPerson(name) {
+  if (!name || name.trim().length < 2) return {found:0, results:[]};
+  var q = name.trim().toLowerCase();
+  var results = [];
+  for (var id in T.i) {
+    var n = (T.i[id].n || '').toLowerCase();
+    if (n.indexOf(q) >= 0) {
+      var p = T.i[id];
+      results.push({
+        id: id, name: p.n, sex: p.s === 'M' ? 'Male' : p.s === 'F' ? 'Female' : 'Unknown',
+        born: [p.bd, p.bp].filter(Boolean).join(', ') || null,
+        died: p.dd || null
+      });
+    }
+  }
+  return {found: results.length, results: results.slice(0, 20)};
+}
+
+function getPerson(id) {
+  var p = T.i[id];
+  if (!p) return {error: 'No person found with ID ' + id};
+  var sfams = getSpouseFams(id);
+  var parents = getParents(id);
+  return {
+    id: id, name: p.n, sex: p.s === 'M' ? 'Male' : p.s === 'F' ? 'Female' : 'Unknown',
+    born: [p.bd, p.bp].filter(Boolean).join(', ') || null,
+    died: [p.dd, p.dp].filter(Boolean).join(', ') || null,
+    notes: p.nt || null,
+    parents: parents,
+    marriages: sfams.map(function(sf) {
+      return {
+        spouse: sf.spouse ? {id: sf.spouse, name: T.i[sf.spouse] ? T.i[sf.spouse].n : sf.spouse} : null,
+        married: [sf.md, sf.mp].filter(Boolean).join(', ') || null,
+        children: sf.children.map(function(cid) {
+          return {id: cid, name: T.i[cid] ? T.i[cid].n : cid};
+        })
+      };
+    })
+  };
+}
+
+function getSpouseFams(pid) {
+  var result = [];
+  for (var fid in T.f) {
+    var f = T.f[fid];
+    if (f.h === pid || f.w === pid) {
+      var sp = f.h === pid ? f.w : f.h;
+      result.push({fid: fid, spouse: sp || null, children: f.c || [], md: f.md || '', mp: f.mp || ''});
+    }
+  }
+  return result;
+}
+
+function getParents(pid) {
+  var parents = [];
+  for (var fid in T.f) {
+    var f = T.f[fid];
+    if ((f.c || []).indexOf(pid) >= 0) {
+      if (f.h) parents.push({role:'father', id:f.h, name: T.i[f.h] ? T.i[f.h].n : f.h});
+      if (f.w) parents.push({role:'mother', id:f.w, name: T.i[f.w] ? T.i[f.w].n : f.w});
+    }
+  }
+  return parents;
+}
+
+function getAncestors(id, generations) {
+  generations = Math.min(generations || 4, 8);
+  var p = T.i[id];
+  if (!p) return {error: 'No person found: ' + id};
+  var byGen = {};
+  var visited = {};
+  function recurse(pid, gen) {
+    if (gen > generations || visited[pid]) return;
+    visited[pid] = true;
+    var parents = getParents(pid);
+    parents.forEach(function(par) {
+      if (!byGen[gen]) byGen[gen] = [];
+      byGen[gen].push({id: par.id, name: par.name, role: par.role,
+        born: T.i[par.id] ? [T.i[par.id].bd, T.i[par.id].bp].filter(Boolean).join(', ')||null : null});
+      recurse(par.id, gen + 1);
+    });
+  }
+  recurse(id, 1);
+  return {person: {id:id, name:p.n}, generations_retrieved: generations,
+          total: Object.values(byGen).reduce(function(s,a){return s+a.length;},0),
+          by_generation: byGen};
+}
+
+function getDescendants(id, generations) {
+  generations = Math.min(generations || 3, 6);
+  var p = T.i[id];
+  if (!p) return {error: 'No person found: ' + id};
+  var byGen = {};
+  var visited = {};
+  function recurse(pid, gen) {
+    if (gen > generations || visited[pid]) return;
+    visited[pid] = true;
+    getSpouseFams(pid).forEach(function(sf) {
+      sf.children.forEach(function(cid) {
+        if (!byGen[gen]) byGen[gen] = [];
+        var cp = T.i[cid];
+        byGen[gen].push({id:cid, name: cp ? cp.n : cid,
+          born: cp ? [cp.bd,cp.bp].filter(Boolean).join(',')||null : null});
+        recurse(cid, gen + 1);
+      });
+    });
+  }
+  recurse(id, 1);
+  return {person:{id:id,name:p.n}, generations_retrieved:generations,
+          total: Object.values(byGen).reduce(function(s,a){return s+a.length;},0),
+          by_generation: byGen};
+}
+
+function findRelationship(id1, id2) {
+  if (!T.i[id1]) return {error: 'No person: ' + id1};
+  if (!T.i[id2]) return {error: 'No person: ' + id2};
+  if (id1 === id2) return {relationship: 'Same person'};
+
+  function getConnected(pid) {
+    var conn = [];
+    // Parents
+    for (var fid in T.f) {
+      var f = T.f[fid];
+      if ((f.c||[]).indexOf(pid) >= 0) {
+        if (f.h) conn.push({id:f.h, rel:'parent'});
+        if (f.w) conn.push({id:f.w, rel:'parent'});
+      }
+    }
+    // Spouse + children
+    getSpouseFams(pid).forEach(function(sf) {
+      if (sf.spouse) conn.push({id:sf.spouse, rel:'spouse'});
+      sf.children.forEach(function(cid) { conn.push({id:cid, rel:'child'}); });
+    });
+    return conn;
+  }
+
+  var queue = [{id:id1, path:[{id:id1,rel:'self'}]}];
+  var visited = {}; visited[id1] = true;
+  var MAX = 12;
+  while (queue.length > 0) {
+    var cur = queue.shift();
+    if (cur.path.length > MAX) continue;
+    var connected = getConnected(cur.id);
+    for (var i = 0; i < connected.length; i++) {
+      var next = connected[i];
+      if (visited[next.id]) continue;
+      var newPath = cur.path.concat([{id:next.id, rel:next.rel}]);
+      if (next.id === id2) {
+        var rels = newPath.slice(1).map(function(x){return x.rel;});
+        var ups = rels.filter(function(r){return r==='parent';}).length;
+        var downs = rels.filter(function(r){return r==='child';}).length;
+        var spouses = rels.filter(function(r){return r==='spouse';}).length;
+        var desc = '';
+        if (spouses===1&&rels.length===1) desc='spouse';
+        else if (ups===1&&downs===0) desc='parent';
+        else if (ups===0&&downs===1) desc='child';
+        else if (ups===1&&downs===1&&rels[0]==='parent') desc='sibling';
+        else if (ups===2&&downs===0) desc='grandparent';
+        else if (ups===0&&downs===2) desc='grandchild';
+        else if (ups===2&&downs===1) desc='uncle/aunt';
+        else if (ups===1&&downs===2) desc='nephew/niece';
+        else if (ups===3&&downs===0) desc='great-grandparent';
+        else if (ups===0&&downs===3) desc='great-grandchild';
+        else if (ups===2&&downs===2) desc='1st cousin';
+        else if (ups===3&&downs===3) desc='2nd cousin';
+        else if ((ups===3&&downs===2)||(ups===2&&downs===3)) desc='1st cousin once removed';
+        else desc = ups+' generations up, '+downs+' down';
+        return {
+          person1: {id:id1, name:T.i[id1].n},
+          person2: {id:id2, name:T.i[id2].n},
+          relationship: desc,
+          degrees: newPath.length-1,
+          path: newPath.map(function(x){return T.i[x.id]?T.i[x.id].n:x.id;})
+        };
+      }
+      visited[next.id] = true;
+      queue.push({id:next.id, path:newPath});
+    }
+  }
+  return {person1:{id:id1,name:T.i[id1].n}, person2:{id:id2,name:T.i[id2].n},
+          relationship:'No connection found within '+MAX+' degrees'};
+}
+
+function findCommonAncestor(id1, id2) {
+  if (!T.i[id1]) return {error: 'No person: ' + id1};
+  if (!T.i[id2]) return {error: 'No person: ' + id2};
+
+  function getAncestorPaths(startId) {
+    var paths = {};
+    var queue = [{id:startId, path:[startId]}];
+    var visited = {};
+    while (queue.length > 0) {
+      var cur = queue.shift();
+      if (visited[cur.id]) continue;
+      visited[cur.id] = true;
+      for (var fid in T.f) {
+        var f = T.f[fid];
+        if ((f.c||[]).indexOf(cur.id) >= 0) {
+          [f.h, f.w].forEach(function(par) {
+            if (par && !visited[par]) {
+              var np = cur.path.concat([par]);
+              if (!paths[par] || np.length < paths[par].length) paths[par] = np;
+              queue.push({id:par, path:np});
+            }
+          });
+        }
+      }
+    }
+    return paths;
+  }
+
+  var anc1 = getAncestorPaths(id1);
+  var anc2 = getAncestorPaths(id2);
+  var common = [];
+  for (var aid in anc1) {
+    if (anc2[aid]) {
+      var p1 = anc1[aid]; var p2 = anc2[aid];
+      common.push({
+        ancestor_id: aid,
+        ancestor_name: T.i[aid] ? T.i[aid].n : aid,
+        generations_from_p1: p1.length - 1,
+        generations_from_p2: p2.length - 1,
+        total_distance: p1.length + p2.length - 2,
+        path_from_p1: p1.map(function(x){return T.i[x]?T.i[x].n:x;}),
+        path_from_p2: p2.map(function(x){return T.i[x]?T.i[x].n:x;})
+      });
+    }
+  }
+  if (common.length === 0)
+    return {person1:{id:id1,name:T.i[id1].n}, person2:{id:id2,name:T.i[id2].n},
+            result:'No common ancestor found in the tree'};
+  common.sort(function(a,b){return a.total_distance-b.total_distance;});
+  return {
+    person1: {id:id1, name:T.i[id1].n},
+    person2: {id:id2, name:T.i[id2].n},
+    closest_common_ancestor: common[0],
+    all_common_ancestors: common.slice(0,5)
+  };
+}
+
+function tribeStats() {
+  var people = Object.keys(T.i).length;
+  var families = Object.keys(T.f).length;
+  var males = Object.values(T.i).filter(function(p){return p.s==='M';}).length;
+  var females = Object.values(T.i).filter(function(p){return p.s==='F';}).length;
+  var withBirth = Object.values(T.i).filter(function(p){return p.bd;}).length;
+  var places = new Set();
+  Object.values(T.i).forEach(function(p){if(p.bp)places.add(p.bp);});
+  return {total_people:people, total_families:families, males:males, females:females,
+          with_birth_dates:withBirth, known_locations:places.size,
+          locations:Array.from(places).sort()};
+}
+
+function searchByPlace(place) {
+  var q = place.toLowerCase();
+  var results = [];
+  for (var id in T.i) {
+    var p = T.i[id];
+    if ((p.bp||'').toLowerCase().indexOf(q)>=0) {
+      results.push({id:id, name:p.n, born:[p.bd,p.bp].filter(Boolean).join(', ')||null});
+    }
+  }
+  return {place:place, found:results.length, people:results.slice(0,30)};
+}
+
+// ── Tool dispatcher ───────────────────────────────────────────────────────
+function executeTool(name, input) {
+  try {
+    switch(name) {
+      case 'search_person':       return searchPerson(input.name);
+      case 'get_person':          return getPerson(input.id);
+      case 'get_ancestors':       return getAncestors(input.id, input.generations||4);
+      case 'get_descendants':     return getDescendants(input.id, input.generations||3);
+      case 'find_relationship':   return findRelationship(input.person1_id, input.person2_id);
+      case 'find_common_ancestor':return findCommonAncestor(input.person1_id, input.person2_id);
+      case 'search_by_place':     return searchByPlace(input.place);
+      case 'tribe_stats':         return tribeStats();
+      default: return {error: 'Unknown tool: ' + name};
+    }
+  } catch(e) {
+    return {error: e.message};
+  }
+}
+
+// ── Tool definitions (sent to Claude API) ─────────────────────────────────
+var TOOLS = [
+  {name:'search_person', description:'Search for a person by name. Always use this first to find their ID before other queries.',
+   input_schema:{type:'object',properties:{name:{type:'string',description:'Full or partial name'}},required:['name']}},
+  {name:'get_person', description:'Get full details for a person: birth, death, parents, spouse(s), children.',
+   input_schema:{type:'object',properties:{id:{type:'string',description:'Person ID e.g. I1'}},required:['id']}},
+  {name:'get_ancestors', description:'Get ancestors of a person up to N generations back.',
+   input_schema:{type:'object',properties:{id:{type:'string'},generations:{type:'number',default:4}},required:['id']}},
+  {name:'get_descendants', description:'Get descendants of a person up to N generations.',
+   input_schema:{type:'object',properties:{id:{type:'string'},generations:{type:'number',default:3}},required:['id']}},
+  {name:'find_relationship', description:'Find how two people are related. Requires their IDs — search first if needed.',
+   input_schema:{type:'object',properties:{person1_id:{type:'string'},person2_id:{type:'string'}},required:['person1_id','person2_id']}},
+  {name:'find_common_ancestor', description:'Find the closest common ancestor of two people and both lineage paths.',
+   input_schema:{type:'object',properties:{person1_id:{type:'string'},person2_id:{type:'string'}},required:['person1_id','person2_id']}},
+  {name:'search_by_place', description:'Find all people born in a specific city or place.',
+   input_schema:{type:'object',properties:{place:{type:'string'}},required:['place']}},
+  {name:'tribe_stats', description:'Get overall statistics about the tribal tree.',
+   input_schema:{type:'object',properties:{}}},
+];
+
+var SYSTEM = `You are a knowledgeable and warm assistant for the IB Forest tribal family tree — a tree of 3,200 people spanning 175+ years.
+
+You have access to tools that run REAL database queries on the family tree. Always use these tools to answer questions — never guess or estimate relationships from memory.
+
+Guidelines:
+- For any name query, ALWAYS call search_person first to get the ID, then call the relevant tool
+- For relationship questions, use find_relationship or find_common_ancestor — these run exact graph algorithms
+- For "common ancestor" questions, ALWAYS use find_common_ancestor — it returns the mathematically correct answer
+- Present results warmly, like a knowledgeable family elder
+- Bold important names in your response
+- When showing lineage paths, present them as clear chains: A → B → C → D
+- Always mention birth dates and places when available`;
+
+// ── Chat state & UI ───────────────────────────────────────────────────────
+var apiKey = '';
+var history = [];
+var loading = false;
+
+document.getElementById('start-btn').addEventListener('click', startChat);
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('api-key-input').addEventListener('keydown', function(e){
+  if(e.key==='Enter') startChat();
+});
+
+window.addEventListener('load', function(){
+  if (!initData()) {
+    console.error('tribe_data.js not loaded');
+  }
+  var saved = localStorage.getItem('ibf_key');
+  if (saved) document.getElementById('api-key-input').value = saved;
+});
+
+function startChat() {
+  var k = document.getElementById('api-key-input').value.trim();
+  if (k.length < 20) { document.getElementById('key-error').style.display='block'; return; }
+  apiKey = k;
+  localStorage.setItem('ibf_key', k);
+  document.getElementById('key-screen').style.display='none';
+  document.getElementById('chat-screen').style.display='flex';
+  document.getElementById('user-input').focus();
+}
+
+window.sendSuggestion = function(el) {
+  document.getElementById('user-input').value = el.textContent;
+  document.getElementById('suggestions').style.display='none';
+  sendMessage();
+};
+
+window.handleKey = function(e) {
+  if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+};
+
+window.autoResize = function(el) {
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,140)+'px';
+};
+
+function appendMsg(role, html) {
+  var msgs = document.getElementById('messages');
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  var av = document.createElement('div');
+  av.className = 'msg-avatar';
+  av.innerHTML = role==='user' ? 'You' : '🌳';
+  var bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = html;
+  div.appendChild(av); div.appendChild(bubble);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return bubble;
+}
+
+function mdToHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/^#{1,3} (.+)$/gm,'<strong>$1</strong>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+async function sendMessage() {
+  if (loading) return;
+  var inp = document.getElementById('user-input');
+  var text = inp.value.trim();
+  if (!text) return;
+  inp.value=''; inp.style.height='auto';
+  document.getElementById('suggestions').style.display='none';
+
+  appendMsg('user', text);
+  history.push({role:'user', content:text});
+
+  loading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Typing indicator
+  var typing = document.createElement('div');
+  typing.className='msg ai';
+  typing.innerHTML='<div class="msg-avatar">🌳</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+  document.getElementById('messages').appendChild(typing);
+  document.getElementById('messages').scrollTop = 99999;
+
+  try {
+    await runAgentLoop(typing);
+  } catch(e) {
+    typing.remove();
+    appendMsg('ai','<p>Error: '+e.message+'</p>');
+  }
+
+  loading = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('user-input').focus();
+}
+
+// ── Agentic loop: Claude → tool call → result → Claude ───────────────────
+async function runAgentLoop(typingEl) {
+  var messages = history.slice(0, -1); // all but last user message already in history
+  var currentMessages = history.slice(); // full history including last user msg
+
+  var MAX_ROUNDS = 6;
+  var toolCallsShown = [];
+
+  for (var round = 0; round < MAX_ROUNDS; round++) {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:2000,
+        system:SYSTEM,
+        tools:TOOLS,
+        messages:currentMessages
+      })
+    });
+
+    if (!resp.ok) {
+      var err = await resp.json();
+      typingEl.remove();
+      var msg = (err.error&&err.error.message)||('API error '+resp.status);
+      appendMsg('ai','<p>Sorry, there was an error: '+msg+'</p>');
+      if (resp.status===401) { localStorage.removeItem('ibf_key'); setTimeout(function(){location.reload();},2500); }
+      return;
+    }
+
+    var data = await resp.json();
+    var stopReason = data.stop_reason;
+    var content = data.content;
+
+    // Add assistant message to history
+    currentMessages.push({role:'assistant', content:content});
+
+    if (stopReason === 'end_turn' || stopReason === 'stop_sequence') {
+      // Final text response
+      typingEl.remove();
+      var textBlocks = content.filter(function(b){return b.type==='text';});
+      var finalText = textBlocks.map(function(b){return b.text;}).join('\n');
+
+      // Show tool calls summary if any
+      var bubble = appendMsg('ai', '');
+      var html = '';
+      if (toolCallsShown.length > 0) {
+        html += '<div class="tool-call">🔍 Queried: ' + toolCallsShown.join(', ') + '</div>';
+      }
+      html += mdToHtml(finalText);
+      bubble.innerHTML = html;
+
+      history.push({role:'assistant', content:finalText});
+      return;
+    }
+
+    if (stopReason === 'tool_use') {
+      // Execute tool calls
+      var toolUseBlocks = content.filter(function(b){return b.type==='tool_use';});
+      var toolResults = [];
+
+      for (var i=0; i<toolUseBlocks.length; i++) {
+        var tb = toolUseBlocks[i];
+        toolCallsShown.push(tb.name.replace(/_/g,' '));
+        var result = executeTool(tb.name, tb.input);
+        toolResults.push({
+          type:'tool_result',
+          tool_use_id: tb.id,
+          content: JSON.stringify(result)
+        });
+      }
+
+      // Add tool results to conversation
+      currentMessages.push({role:'user', content:toolResults});
+      continue;
+    }
+
+    // Unexpected stop — just show whatever text we have
+    typingEl.remove();
+    var textBlocks2 = content.filter(function(b){return b.type==='text';});
+    var txt = textBlocks2.map(function(b){return b.text;}).join('\n');
+    appendMsg('ai', mdToHtml(txt || 'Something went wrong.'));
+    return;
+  }
+
+  typingEl.remove();
+  appendMsg('ai','<p>Query took too many steps. Please try a more specific question.</p>');
+}
+
+})();
+</script>
+</body>
+</html>
