@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apnon Ki Talaash — Family Tree Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --forest: #1a3a2a;
+  --forest-mid: #2d5a3d;
+  --forest-light: #4a8c5c;
+  --leaf: #6ab04c;
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --cream: #faf6ef;
+  --parchment: #f0e8d8;
+  --bark: #7a5c3a;
+  --text: #2a1f14;
+  --text-mid: #5a4a36;
+  --text-light: #8a7a6a;
+  --border: #d4c4a8;
+  --shadow: rgba(26,58,42,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Source Serif 4', Georgia, serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 60%, #1e4a30 100%);
+  color: white;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  padding: 14px 28px;
+  gap: 16px;
+}
+.header-logo { font-size: 28px; }
+.header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: 0.5px;
+}
+.header-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  font-style: italic;
+  margin-top: 2px;
+}
+.header-stats {
+  margin-left: auto;
+  text-align: right;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.6;
+}
+.header-stats span { color: var(--gold-light); font-weight: 600; }
+
+/* ── Tabs ── */
+.tabs {
+  background: var(--forest);
+  display: flex;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.tab {
+  flex: 1;
+  padding: 10px 6px;
+  text-align: center;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  letter-spacing: 0.3px;
+}
+.tab:hover { color: white; background: rgba(255,255,255,0.05); }
+.tab.active { color: var(--gold-light); border-bottom-color: var(--gold); background: rgba(255,255,255,0.07); }
+
+/* ── Main Layout ── */
+.main { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+/* ── Upload Zone ── */
+.upload-zone {
+  border: 2px dashed var(--forest-light);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(74,140,92,0.06), rgba(201,168,76,0.06));
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  margin-bottom: 24px;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(74,140,92,0.1), rgba(201,168,76,0.1));
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.upload-icon { font-size: 36px; margin-bottom: 10px; }
+.upload-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: var(--forest);
+  margin-bottom: 6px;
+}
+.upload-sub { font-size: 13px; color: var(--text-light); font-style: italic; }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+
+/* ── File Chips ── */
+.file-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.chip {
+  background: var(--forest);
+  color: white;
+  padding: 5px 12px 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip-remove {
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 14px;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+.chip-remove:hover { opacity: 1; }
+.chip-count {
+  background: var(--gold);
+  color: var(--forest);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ── Panels ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Search ── */
+.search-box {
+  position: relative;
+  margin-bottom: 20px;
+}
+.search-box input {
+  width: 100%;
+  padding: 13px 18px 13px 46px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  background: white;
+  color: var(--text);
+  transition: border-color 0.2s;
+  outline: none;
+}
+.search-box input:focus { border-color: var(--forest-light); }
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  pointer-events: none;
+}
+
+/* ── Person Card ── */
+.results-grid { display: grid; gap: 12px; }
+.person-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 4px solid transparent;
+}
+.person-card:hover {
+  border-left-color: var(--forest-light);
+  box-shadow: 0 4px 16px var(--shadow);
+  transform: translateX(3px);
+}
+.person-card.male { border-left-color: #4a7a9b; }
+.person-card.female { border-left-color: #c9607a; }
+.person-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--forest);
+  margin-bottom: 4px;
+}
+.person-meta { font-size: 12px; color: var(--text-light); display: flex; gap: 14px; flex-wrap: wrap; }
+.person-meta span { display: flex; align-items: center; gap: 4px; }
+.sex-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+.sex-badge.M { background: #ddeef7; color: #2a5a7a; }
+.sex-badge.F { background: #fde8ee; color: #8a2040; }
+
+/* ── Detail Modal / Drawer ── */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.detail-overlay.open { display: flex; }
+.detail-drawer {
+  background: var(--cream);
+  width: 100%;
+  max-width: 680px;
+  max-height: 85vh;
+  border-radius: 20px 20px 0 0;
+  overflow-y: auto;
+  padding: 28px 28px 40px;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.drawer-close {
+  position: absolute;
+  top: 16px; right: 20px;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-light);
+  line-height: 1;
+  transition: color 0.15s;
+}
+.drawer-close:hover { color: var(--text); }
+.drawer-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--forest);
+  margin-bottom: 6px;
+  padding-right: 40px;
+}
+.drawer-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.drawer-section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.info-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 7px;
+  font-size: 14px;
+}
+.info-label { color: var(--text-light); width: 100px; flex-shrink: 0; }
+.info-value { color: var(--text); font-weight: 500; }
+.family-list { display: grid; gap: 8px; }
+.family-item {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.family-item:hover { background: var(--parchment); }
+.family-item-name { font-weight: 600; color: var(--forest); }
+.family-item-meta { color: var(--text-light); font-size: 12px; margin-top: 2px; }
+
+/* ── Tree View ── */
+.tree-container {
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+.tree-search {
+  display: flex; gap: 10px; margin-bottom: 16px;
+}
+.tree-search input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+.tree-search input:focus { border-color: var(--forest-light); }
+.btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-forest {
+  background: var(--forest);
+  color: white;
+}
+.btn-forest:hover { background: var(--forest-mid); }
+.btn-gold {
+  background: var(--gold);
+  color: var(--forest);
+}
+.btn-gold:hover { background: var(--gold-light); }
+
+.tree-node {
+  margin-left: 0;
+  position: relative;
+}
+.tree-family {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+.tree-family-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  background: linear-gradient(90deg, rgba(42,93,62,0.04), transparent);
+}
+.tree-family-header:hover { background: rgba(42,93,62,0.08); }
+.tree-toggle {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.tree-toggle.open { transform: rotate(45deg); }
+.tree-parents { font-family: 'Playfair Display', serif; font-size: 14px; color: var(--forest); font-weight: 600; }
+.tree-marr { font-size: 12px; color: var(--text-light); margin-left: auto; }
+.tree-children {
+  display: none;
+  padding: 4px 16px 12px 48px;
+  border-top: 1px solid var(--border);
+  background: var(--cream);
+}
+.tree-children.open { display: block; }
+.tree-child {
+  padding: 7px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  margin-bottom: 2px;
+}
+.tree-child:hover { background: white; }
+.child-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.child-dot.M { background: #4a7a9b; }
+.child-dot.F { background: #c9607a; }
+.child-dot.U { background: var(--text-light); }
+
+/* ── Stats ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 18px;
+  text-align: center;
+  border-top: 4px solid var(--forest-light);
+}
+.stat-number {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--forest);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-label { font-size: 12px; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; }
+
+.files-table {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+.files-table-header {
+  background: var(--forest);
+  color: white;
+  padding: 12px 18px;
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+}
+.files-table table { width: 100%; border-collapse: collapse; }
+.files-table th, .files-table td { padding: 11px 18px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); }
+.files-table th { color: var(--text-light); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; background: var(--parchment); }
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: rgba(74,140,92,0.04); }
+
+/* ── Empty State ── */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-light);
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty-title { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 6px; color: var(--text-mid); }
+
+/* ── Loading ── */
+.loading-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  display: none;
+}
+.loading-bar.active { display: block; }
+.loading-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--forest-light), var(--gold));
+  border-radius: 2px;
+  animation: loadPulse 1.2s ease-in-out infinite;
+}
+@keyframes loadPulse { 0%,100%{width:30%} 50%{width:80%} }
+.loading-text { text-align: center; font-size: 13px; color: var(--text-light); font-style: italic; margin-bottom: 16px; display: none; }
+
+/* ── Highlight ── */
+mark { background: rgba(201,168,76,0.3); color: inherit; border-radius: 2px; }
+
+/* ── Responsive ── */
+@media(max-width:600px) {
+  .header-inner { padding: 12px 16px; }
+  .main { padding: 16px 12px; }
+  .detail-drawer { padding: 20px 16px 32px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-logo">🌳</div>
+    <div>
+      <div class="header-title">IB Forest</div>
+      <div class="header-sub">Tribal Family Tree Viewer</div>
+    </div>
+    <div class="header-stats" id="headerStats">
+      Upload a GEDCOM file to begin
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('upload')" id="tab-upload">📂 Upload</div>
+    <div class="tab" onclick="switchTab('search')" id="tab-search">🔍 Search</div>
+    <div class="tab" onclick="switchTab('tree')" id="tab-tree">🌿 Tree View</div>
+    <div class="tab" onclick="switchTab('stats')" id="tab-stats">📊 Stats</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Upload Panel -->
+  <div class="panel active" id="panel-upload">
+    <div class="upload-zone" id="uploadZone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <input type="file" id="fileInput" accept=".ged,.gedcom" multiple onchange="handleFiles(this.files)">
+      <div class="upload-icon">📜</div>
+      <div class="upload-title">Drop GEDCOM files here or click to upload</div>
+      <div class="upload-sub">Upload one or more .ged / .gedcom files — data accumulates across uploads</div>
+    </div>
+
+    <div class="loading-bar" id="loadingBar"><div class="loading-fill"></div></div>
+    <div class="loading-text" id="loadingText">Parsing family data…</div>
+
+    <div class="file-chips" id="fileChips"></div>
+
+    <div id="uploadSummary"></div>
+  </div>
+
+  <!-- Search Panel -->
+  <div class="panel" id="panel-search">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search by name, village, or place…" oninput="doSearch(this.value)">
+    </div>
+    <div id="searchResults">
+      <div class="empty">
+        <div class="empty-icon">🌿</div>
+        <div class="empty-title">Start typing to search</div>
+        <div>Search across all uploaded family files</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tree Panel -->
+  <div class="panel" id="panel-tree">
+    <div class="tree-search">
+      <input type="text" id="treeSearch" placeholder="Filter by family name…" oninput="filterTree(this.value)">
+      <button class="btn btn-forest" onclick="expandAll()">Expand All</button>
+      <button class="btn btn-gold" onclick="collapseAll()">Collapse All</button>
+    </div>
+    <div class="tree-container" id="treeContainer">
+      <div class="empty">
+        <div class="empty-icon">🌳</div>
+        <div class="empty-title">No data loaded yet</div>
+        <div>Upload GEDCOM files to view the family tree</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Panel -->
+  <div class="panel" id="panel-stats">
+    <div id="statsContent">
+      <div class="empty">
+        <div class="empty-icon">📊</div>
+        <div class="empty-title">No data loaded yet</div>
+        <div>Upload GEDCOM files to view statistics</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Detail Drawer -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDrawer(event)">
+  <div class="detail-drawer" id="detailDrawer">
+    <div class="drawer-close" onclick="closeDetail()">✕</div>
+    <div id="drawerContent"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DATA STORE
+// ═══════════════════════════════════════════════
+const db = {
+  individuals: {},   // id -> person object
+  families: {},      // id -> family object
+  files: []          // list of {name, individuals, families}
+};
+
+// ═══════════════════════════════════════════════
+//  GEDCOM PARSER
+// ═══════════════════════════════════════════════
+function parseGEDCOM(text, filename) {
+  const lines = text.split(/\r?\n/);
+  const individuals = {};
+  const families = {};
+
+  let rec = null, type = null, cur = {}, ctx1 = null;
+
+  function flush() {
+    if (!rec) return;
+    if (type === 'INDI') individuals[rec] = cur;
+    else if (type === 'FAM') families[rec] = cur;
+    rec = null; type = null; cur = {}; ctx1 = null;
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const parts = line.split(' ');
+    const level = parts[0];
+    const tag = parts[1] || '';
+    const val = parts.slice(2).join(' ');
+
+    if (level === '0') {
+      flush();
+      if (parts.length >= 3) {
+        const xref = parts[1], t = parts[2];
+        if (t === 'INDI') {
+          rec = xref; type = 'INDI';
+          cur = { id: xref, name: '', givn: '', surn: '', sex: 'U', birth_date: '', birth_year: '', birth_place: '', death: false, death_date: '', death_place: '', famc: [], fams: [], bord: '', uid: '' };
+        } else if (t === 'FAM') {
+          rec = xref; type = 'FAM';
+          cur = { id: xref, husb: '', wife: '', children: [], marr_date: '', marr_place: '', div_date: '' };
+        }
+      }
+    } else if (level === '1') {
+      ctx1 = tag;
+      if (type === 'INDI') {
+        if (tag === 'NAME') { cur.name = val.replace(/\//g, '').trim(); cur._rawname = val; }
+        else if (tag === 'SEX') cur.sex = val;
+        else if (tag === 'DEAT') cur.death = true;
+        else if (tag === 'FAMC') cur.famc.push(val);
+        else if (tag === 'FAMS') cur.fams.push(val);
+        else if (tag === '_BORD') cur.bord = val;
+        else if (tag === '_UID') cur.uid = val;
+      } else if (type === 'FAM') {
+        if (tag === 'HUSB') cur.husb = val;
+        else if (tag === 'WIFE') cur.wife = val;
+        else if (tag === 'CHIL') cur.children.push(val);
+        else if (tag === 'MARR') {} // context set
+        else if (tag === 'DIV') cur.div_date = val === 'Y' ? 'Yes' : val;
+      }
+    } else if (level === '2') {
+      if (type === 'INDI') {
+        if (ctx1 === 'NAME') {
+          if (tag === 'GIVN') cur.givn = val;
+          else if (tag === 'SURN') cur.surn = val;
+        } else if (ctx1 === 'BIRT') {
+          if (tag === 'DATE') { cur.birth_date = val; cur.birth_year = val.split(' ').pop(); }
+          else if (tag === 'PLAC') cur.birth_place = val;
+        } else if (ctx1 === 'DEAT') {
+          if (tag === 'DATE') cur.death_date = val;
+          else if (tag === 'PLAC') cur.death_place = val;
+        }
+      } else if (type === 'FAM') {
+        if (ctx1 === 'MARR') {
+          if (tag === 'DATE') cur.marr_date = val;
+          else if (tag === 'PLAC') cur.marr_place = val;
+        }
+      }
+    }
+  }
+  flush();
+
+  return { individuals, families, filename };
+}
+
+// ═══════════════════════════════════════════════
+//  FILE HANDLING
+// ═══════════════════════════════════════════════
+function handleFiles(files) {
+  if (!files.length) return;
+  showLoading(true);
+  const arr = Array.from(files);
+  let done = 0;
+  arr.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const result = parseGEDCOM(e.target.result, file.name);
+      // Merge into global db
+      Object.assign(db.individuals, result.individuals);
+      Object.assign(db.families, result.families);
+      db.files.push({ name: file.name, individuals: Object.keys(result.individuals).length, families: Object.keys(result.families).length });
+      done++;
+      if (done === arr.length) {
+        showLoading(false);
+        renderChips();
+        renderUploadSummary();
+        updateHeaderStats();
+        renderTree();
+        renderStats();
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
+function onDragLeave() { document.getElementById('uploadZone').classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+}
+
+function showLoading(on) {
+  document.getElementById('loadingBar').classList.toggle('active', on);
+  document.getElementById('loadingText').style.display = on ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════
+function renderChips() {
+  const el = document.getElementById('fileChips');
+  el.innerHTML = db.files.map((f, i) => `
+    <div class="chip">
+      📜 ${f.name}
+      <span class="chip-count">${f.individuals} people</span>
+      <span class="chip-remove" onclick="removeFile(${i})">✕</span>
+    </div>
+  `).join('');
+}
+
+function removeFile(idx) {
+  // Full re-parse approach: just clear and note removal
+  db.files.splice(idx, 1);
+  alert('To remove a file, please refresh the page and re-upload your remaining files.');
+}
+
+function renderUploadSummary() {
+  const totalP = Object.keys(db.individuals).length;
+  const totalF = Object.keys(db.families).length;
+  document.getElementById('uploadSummary').innerHTML = totalP === 0 ? '' : `
+    <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:18px 20px;display:flex;gap:28px;flex-wrap:wrap;align-items:center;">
+      <div style="text-align:center;">
+        <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--forest);font-weight:700;">${totalP.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px;">People</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--forest);font-weight:700;">${totalF.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px;">Families</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--forest);font-weight:700;">${db.files.length}</div>
+        <div style="font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px;">Files Loaded</div>
+      </div>
+      <div style="margin-left:auto;">
+        <button class="btn btn-forest" onclick="switchTab('search')">🔍 Search People</button>
+      </div>
+    </div>
+  `;
+}
+
+function updateHeaderStats() {
+  const p = Object.keys(db.individuals).length;
+  const f = Object.keys(db.families).length;
+  document.getElementById('headerStats').innerHTML = p === 0 ? 'Upload a GEDCOM file to begin' :
+    `<span>${p.toLocaleString()}</span> people · <span>${f.toLocaleString()}</span> families<br>${db.files.length} file${db.files.length !== 1 ? 's' : ''} loaded`;
+}
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'search') document.getElementById('searchInput').focus();
+}
+
+// ═══════════════════════════════════════════════
+//  SEARCH
+// ═══════════════════════════════════════════════
+function highlight(text, query) {
+  if (!query) return text;
+  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(re, '<mark>$1</mark>');
+}
+
+function doSearch(q) {
+  const el = document.getElementById('searchResults');
+  if (!q || q.length < 2) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🌿</div><div class="empty-title">Start typing to search</div><div>Search across all uploaded family files</div></div>';
+    return;
+  }
+  const lq = q.toLowerCase();
+  const results = Object.values(db.individuals).filter(p =>
+    (p.name || '').toLowerCase().includes(lq) ||
+    (p.birth_place || '').toLowerCase().includes(lq)
+  ).slice(0, 80);
+
+  if (!results.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">No results found</div></div>';
+    return;
+  }
+
+  el.innerHTML = `<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;">${results.length} result${results.length !== 1 ? 's' : ''} found</div>
+  <div class="results-grid">${results.map(p => {
+    const spouse = getSpouse(p);
+    const parents = getParents(p);
+    return `<div class="person-card ${p.sex === 'M' ? 'male' : p.sex === 'F' ? 'female' : ''}" onclick="showPerson('${p.id}')">
+      <div class="person-name">${highlight(p.name || '(unnamed)', q)}<span class="sex-badge ${p.sex}">${p.sex === 'M' ? '♂' : p.sex === 'F' ? '♀' : '?'}</span></div>
+      <div class="person-meta">
+        ${p.birth_year ? `<span>🗓 b. ${p.birth_year}</span>` : ''}
+        ${p.birth_place ? `<span>📍 ${highlight(p.birth_place, q)}</span>` : ''}
+        ${p.death ? `<span>✝ ${p.death_date || 'deceased'}</span>` : ''}
+        ${spouse ? `<span>💍 ${spouse.name}</span>` : ''}
+        ${parents ? `<span>👨‍👩‍👦 ${parents}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function getSpouse(person) {
+  for (const fid of person.fams) {
+    const fam = db.families[fid];
+    if (!fam) continue;
+    const spouseId = person.sex === 'M' ? fam.wife : fam.husb;
+    if (spouseId && db.individuals[spouseId]) return db.individuals[spouseId];
+  }
+  return null;
+}
+
+function getParents(person) {
+  for (const fid of person.famc) {
+    const fam = db.families[fid];
+    if (!fam) continue;
+    const parts = [];
+    if (fam.husb && db.individuals[fam.husb]) parts.push(db.individuals[fam.husb].name);
+    if (fam.wife && db.individuals[fam.wife]) parts.push(db.individuals[fam.wife].name);
+    if (parts.length) return parts.join(' & ');
+  }
+  return '';
+}
+
+function getChildren(person) {
+  const kids = [];
+  for (const fid of person.fams) {
+    const fam = db.families[fid];
+    if (!fam) continue;
+    for (const cid of fam.children) {
+      if (db.individuals[cid]) kids.push(db.individuals[cid]);
+    }
+  }
+  return kids;
+}
+
+// ═══════════════════════════════════════════════
+//  PERSON DETAIL DRAWER
+// ═══════════════════════════════════════════════
+function showPerson(id) {
+  const p = db.individuals[id];
+  if (!p) return;
+
+  // Parents
+  let parentsHtml = '';
+  for (const fid of p.famc) {
+    const fam = db.families[fid];
+    if (!fam) continue;
+    const f = fam.husb ? db.individuals[fam.husb] : null;
+    const m = fam.wife ? db.individuals[fam.wife] : null;
+    if (f || m) {
+      parentsHtml += `<div class="family-item" onclick="showPerson('${fam.husb || fam.wife}')">
+        <div class="family-item-name">Father: ${f ? f.name : '—'}</div>
+        <div class="family-item-meta">Mother: ${m ? m.name : '—'}</div>
+      </div>`;
+    }
+  }
+
+  // Spouses & Children
+  let spousesHtml = '';
+  for (const fid of p.fams) {
+    const fam = db.families[fid];
+    if (!fam) continue;
+    const spouseId = p.sex === 'M' ? fam.wife : fam.husb;
+    const spouse = spouseId ? db.individuals[spouseId] : null;
+    const children = fam.children.map(c => db.individuals[c]).filter(Boolean);
+    const childList = children.map(c =>
+      `<div class="tree-child" onclick="showPerson('${c.id}')"><span class="child-dot ${c.sex}"></span>${c.name}${c.birth_year ? ` <span style="color:var(--text-light);font-size:11px;">b.${c.birth_year}</span>` : ''}</div>`
+    ).join('');
+    spousesHtml += `
+      <div class="family-item" style="cursor:default">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="family-item-name">💍 ${spouse ? `<span onclick="showPerson('${spouseId}')" style="cursor:pointer;color:var(--forest);">${spouse.name}</span>` : '(unknown)'}</div>
+          ${fam.marr_date ? `<span style="font-size:11px;color:var(--text-light);margin-left:auto;">m. ${fam.marr_date}</span>` : ''}
+          ${fam.div_date ? `<span style="font-size:11px;color:#c0392b;margin-left:8px;">div. ${fam.div_date}</span>` : ''}
+        </div>
+        ${fam.marr_place ? `<div class="family-item-meta">📍 ${fam.marr_place}</div>` : ''}
+        ${childList ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">${childList}</div>` : '<div class="family-item-meta" style="margin-top:6px;">No children recorded</div>'}
+      </div>`;
+  }
+
+  document.getElementById('drawerContent').innerHTML = `
+    <div class="drawer-name">${p.name || '(unnamed)'}
+      <span class="sex-badge ${p.sex}" style="font-size:13px;">${p.sex === 'M' ? '♂ Male' : p.sex === 'F' ? '♀ Female' : '?'}</span>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-title">Personal Details</div>
+      ${p.birth_date ? `<div class="info-row"><span class="info-label">Born</span><span class="info-value">${p.birth_date}${p.birth_place ? ` · ${p.birth_place}` : ''}</span></div>` : ''}
+      ${p.birth_place && !p.birth_date ? `<div class="info-row"><span class="info-label">Birth Place</span><span class="info-value">${p.birth_place}</span></div>` : ''}
+      ${p.death ? `<div class="info-row"><span class="info-label">Deceased</span><span class="info-value">${p.death_date || 'Yes'}${p.death_place ? ` · ${p.death_place}` : ''}</span></div>` : ''}
+      ${p.bord ? `<div class="info-row"><span class="info-label">Birth Order</span><span class="info-value">${p.bord}</span></div>` : ''}
+      ${!p.birth_date && !p.birth_place && !p.death && !p.bord ? '<div style="color:var(--text-light);font-size:13px;font-style:italic;">No additional details recorded</div>' : ''}
+    </div>
+    ${parentsHtml ? `<div class="drawer-section"><div class="drawer-section-title">Parents</div><div class="family-list">${parentsHtml}</div></div>` : ''}
+    ${spousesHtml ? `<div class="drawer-section"><div class="drawer-section-title">Spouse${p.fams.length > 1 ? 's' : ''} & Children</div><div class="family-list">${spousesHtml}</div></div>` : ''}
+  `;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+function closeDrawer(e) { if (e.target === document.getElementById('detailOverlay')) closeDetail(); }
+
+// ═══════════════════════════════════════════════
+//  TREE VIEW
+// ═══════════════════════════════════════════════
+function renderTree() {
+  const container = document.getElementById('treeContainer');
+  const fams = Object.values(db.families);
+  if (!fams.length) return;
+
+  // Sort families by husband name
+  fams.sort((a, b) => {
+    const an = (db.individuals[a.husb] || {}).name || '';
+    const bn = (db.individuals[b.husb] || {}).name || '';
+    return an.localeCompare(bn);
+  });
+
+  container.innerHTML = fams.map((fam, idx) => {
+    const husb = fam.husb ? db.individuals[fam.husb] : null;
+    const wife = fam.wife ? db.individuals[fam.wife] : null;
+    const husbName = husb ? husb.name : '—';
+    const wifeName = wife ? wife.name : '—';
+    const children = fam.children.map(c => db.individuals[c]).filter(Boolean);
+
+    const childrenHtml = children.length
+      ? children.map(c => `
+          <div class="tree-child" onclick="showPerson('${c.id}')">
+            <span class="child-dot ${c.sex}"></span>
+            <span>${c.name}${c.birth_year ? ` <span style="color:var(--text-light);font-size:11px;">(b.${c.birth_year})</span>` : ''}</span>
+          </div>`).join('')
+      : '<div style="font-size:12px;color:var(--text-light);font-style:italic;padding:4px 0;">No children recorded</div>';
+
+    return `
+      <div class="tree-family" data-fid="${fam.id}" data-names="${husbName.toLowerCase()} ${wifeName.toLowerCase()}">
+        <div class="tree-family-header" onclick="toggleFamily('fam${idx}')">
+          <div class="tree-toggle" id="toggle-fam${idx}">＋</div>
+          <div>
+            <div class="tree-parents">
+              ${husb ? `<span onclick="event.stopPropagation();showPerson('${husb.id}')" style="cursor:pointer;border-bottom:1px dotted var(--forest-light);">${husbName}</span>` : husbName}
+              <span style="color:var(--gold);margin:0 6px;">⚭</span>
+              ${wife ? `<span onclick="event.stopPropagation();showPerson('${wife.id}')" style="cursor:pointer;border-bottom:1px dotted #c9607a;">${wifeName}</span>` : wifeName}
+            </div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:2px;">${children.length} child${children.length !== 1 ? 'ren' : ''}</div>
+          </div>
+          <div class="tree-marr">${fam.marr_date || ''}</div>
+        </div>
+        <div class="tree-children" id="fam${idx}">${childrenHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleFamily(id) {
+  const el = document.getElementById(id);
+  const tog = document.getElementById('toggle-' + id);
+  const open = el.classList.toggle('open');
+  tog.classList.toggle('open', open);
+  tog.textContent = open ? '－' : '＋';
+}
+
+function expandAll() {
+  document.querySelectorAll('.tree-children').forEach((el, i) => {
+    el.classList.add('open');
+    const tog = document.getElementById('toggle-fam' + i);
+    if (tog) { tog.classList.add('open'); tog.textContent = '－'; }
+  });
+}
+
+function collapseAll() {
+  document.querySelectorAll('.tree-children').forEach((el, i) => {
+    el.classList.remove('open');
+    const tog = document.getElementById('toggle-fam' + i);
+    if (tog) { tog.classList.remove('open'); tog.textContent = '＋'; }
+  });
+}
+
+function filterTree(q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll('.tree-family').forEach(el => {
+    const names = el.dataset.names || '';
+    el.style.display = (!q || names.includes(lq)) ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════════
+function renderStats() {
+  const people = Object.values(db.individuals);
+  const fams = Object.values(db.families);
+  if (!people.length) return;
+
+  const males = people.filter(p => p.sex === 'M').length;
+  const females = people.filter(p => p.sex === 'F').length;
+  const deceased = people.filter(p => p.death).length;
+  const withChildren = fams.filter(f => f.children.length > 0).length;
+  const childCounts = fams.map(f => f.children.length).filter(n => n > 0);
+  const maxChildren = childCounts.length ? Math.max(...childCounts) : 0;
+  const avgChildren = childCounts.length ? (childCounts.reduce((a, b) => a + b, 0) / childCounts.length).toFixed(1) : 0;
+
+  // Biggest family
+  const biggestFam = fams.reduce((a, b) => b.children.length > a.children.length ? b : a, fams[0]);
+  const bigHusb = biggestFam && biggestFam.husb ? db.individuals[biggestFam.husb] : null;
+
+  // File breakdown table
+  const fileRows = db.files.map(f => `
+    <tr>
+      <td>📜 ${f.name}</td>
+      <td>${f.individuals.toLocaleString()}</td>
+      <td>${f.families.toLocaleString()}</td>
+    </tr>`).join('');
+
+  document.getElementById('statsContent').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">${people.length.toLocaleString()}</div>
+        <div class="stat-label">Total People</div>
+      </div>
+      <div class="stat-card" style="border-top-color:#4a7a9b;">
+        <div class="stat-number" style="color:#4a7a9b;">${males.toLocaleString()}</div>
+        <div class="stat-label">Males</div>
+      </div>
+      <div class="stat-card" style="border-top-color:#c9607a;">
+        <div class="stat-number" style="color:#c9607a;">${females.toLocaleString()}</div>
+        <div class="stat-label">Females</div>
+      </div>
+      <div class="stat-card" style="border-top-color:var(--bark);">
+        <div class="stat-number" style="color:var(--bark);">${deceased.toLocaleString()}</div>
+        <div class="stat-label">Deceased</div>
+      </div>
+      <div class="stat-card" style="border-top-color:var(--gold);">
+        <div class="stat-number" style="color:var(--gold);">${fams.length.toLocaleString()}</div>
+        <div class="stat-label">Families</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${withChildren}</div>
+        <div class="stat-label">With Children</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${avgChildren}</div>
+        <div class="stat-label">Avg Children/Family</div>
+      </div>
+      <div class="stat-card" style="border-top-color:#e67e22;">
+        <div class="stat-number" style="color:#e67e22;">${maxChildren}</div>
+        <div class="stat-label">Most Children</div>
+      </div>
+    </div>
+    ${bigHusb ? `<div style="background:white;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:6px;">Largest Family</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--forest);">${bigHusb.name} — ${maxChildren} children</div>
+    </div>` : ''}
+    <div class="files-table">
+      <div class="files-table-header">📁 Loaded Files</div>
+      <table>
+        <thead><tr><th>Filename</th><th>People</th><th>Families</th></tr></thead>
+        <tbody>${fileRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
