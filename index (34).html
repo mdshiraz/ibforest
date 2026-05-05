@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IB Forest — Family Tree</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1a1209;--paper:#f5f0e8;--paper2:#ede7d9;
+  --sepia:#8b6914;--sl:#c9a84c;--sp:#f0e6c8;
+  --rust:#7a3b1e;--muted:#6b5e4a;--border:#d4c4a0;
+  --bg:#fff9f0;--green:#1a7a4a;--blue:#185fa5;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Source Sans 3",sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;}
+.stripe{height:5px;background:repeating-linear-gradient(90deg,var(--sepia) 0,var(--sepia) 12px,var(--sl) 12px,var(--sl) 14px,var(--rust) 14px,var(--rust) 26px,var(--sl) 26px,var(--sl) 28px);}
+
+/* Header */
+header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--paper);position:sticky;top:0;z-index:100;}
+.logo{font-size:32px;cursor:pointer;transition:transform 0.2s;}
+.logo:hover{transform:scale(1.1);}
+.htitle{cursor:pointer;}
+.htitle h1{font-family:"Playfair Display",serif;font-size:22px;color:var(--sepia);}
+.htitle p{font-size:11px;color:var(--muted);}
+.home-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--sp);border:1px solid var(--border);border-radius:20px;font-size:12px;color:var(--sepia);cursor:pointer;font-family:"Source Sans 3",sans-serif;transition:all 0.15s;text-decoration:none;}
+.home-btn:hover{background:var(--sepia);color:var(--paper);}
+.hbadge{margin-left:auto;font-size:11px;color:var(--muted);text-align:right;line-height:1.6;}
+.hbadge strong{display:block;font-size:14px;color:var(--sepia);}
+
+/* Loading */
+#loading{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--sepia);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Main */
+#app{flex:1;display:none;flex-direction:column;}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--paper);padding:0 24px;overflow-x:auto;}
+.tab{padding:11px 18px;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;white-space:nowrap;font-family:"Source Sans 3",sans-serif;}
+.tab.active{color:var(--sepia);border-bottom-color:var(--sepia);font-weight:500;}
+.tab:hover:not(.active){color:var(--ink);}
+
+/* Content */
+#content{flex:1;overflow-y:auto;padding:24px;max-width:820px;width:100%;margin:0 auto;}
+
+/* Search with autocomplete */
+.search-wrap{position:relative;margin-bottom:20px;}
+.search-row{display:flex;gap:10px;}
+.search-input{flex:1;padding:11px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-size:15px;font-family:"Source Sans 3",sans-serif;color:var(--ink);outline:none;transition:border-color 0.2s;}
+.search-input:focus{border-color:var(--sl);}
+.autocomplete-dropdown{position:absolute;top:100%;left:0;right:60px;background:var(--bg);border:1px solid var(--border);border-radius:0 0 10px 10px;box-shadow:0 8px 24px rgba(139,105,20,0.12);z-index:200;max-height:280px;overflow-y:auto;display:none;}
+.ac-item{padding:9px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid rgba(212,196,160,0.3);display:flex;align-items:center;gap:10px;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.active{background:var(--sp);}
+.ac-name{font-weight:500;color:var(--ink);}
+.ac-detail{font-size:11px;color:var(--muted);}
+.ac-sex{font-size:10px;width:16px;text-align:center;flex-shrink:0;}
+.search-hint{font-size:12px;color:var(--muted);margin-top:6px;}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.chip{padding:6px 14px;background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:13px;color:var(--sepia);cursor:pointer;transition:all 0.15s;}
+.chip:hover{background:var(--sp);border-color:var(--sl);}
+
+/* Cards */
+.card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:14px;transition:box-shadow 0.15s;}
+.card:hover{box-shadow:0 4px 16px rgba(139,105,20,0.08);}
+.card-title{font-family:"Playfair Display",serif;font-size:17px;color:var(--sepia);margin-bottom:4px;}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:12px;font-family:"JetBrains Mono",monospace;}
+.fact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px;}
+.fact{background:var(--sp);border-radius:8px;padding:8px 12px;}
+.fact-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;}
+.fact-val{font-size:13px;color:var(--ink);margin-top:2px;}
+.sec-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin:12px 0 6px;}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;background:var(--paper2);border:1px solid var(--border);border-radius:16px;font-size:13px;cursor:pointer;margin:3px;transition:all 0.15s;}
+.pill:hover{background:var(--sp);border-color:var(--sl);color:var(--sepia);}
+.gen-badge{font-size:10px;color:var(--sepia);background:var(--sp);padding:2px 8px;border-radius:10px;display:inline-block;margin:6px 0 3px;}
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--sepia);cursor:pointer;margin-bottom:14px;padding:5px 10px;border-radius:6px;transition:background 0.15s;}
+.back-btn:hover{background:var(--sp);}
+.empty{text-align:center;padding:48px;color:var(--muted);}
+.empty .ei{font-size:40px;margin-bottom:12px;}
+.res-count{font-size:13px;color:var(--muted);margin-bottom:12px;}
+.note-box{background:#fffbf0;border-left:3px solid var(--sl);padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;color:var(--muted);margin-top:10px;font-style:italic;}
+.btn{padding:9px 20px;background:var(--sepia);color:var(--paper);border:none;border-radius:8px;font-size:13px;font-family:"Source Sans 3",sans-serif;cursor:pointer;transition:background 0.15s;}
+.btn:hover{background:var(--rust);}
+.btn.outline{background:transparent;color:var(--sepia);border:1.5px solid var(--border);}
+.btn.outline:hover{background:var(--sp);}
+
+/* Relation / Common Ancestor panels */
+.dual-panel{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+@media(max-width:600px){.dual-panel{grid-template-columns:1fr;}}
+.person-picker{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;}
+.person-picker label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:6px;}
+.selected-person{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--sp);border-radius:8px;font-size:14px;font-weight:500;color:var(--sepia);min-height:38px;}
+.selected-person .clear{cursor:pointer;color:var(--muted);font-size:16px;padding:0 4px;}
+.selected-person .clear:hover{color:var(--rust);}
+.result-box{background:var(--sp);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-top:16px;}
+.result-box h4{font-family:"Playfair Display",serif;font-size:15px;color:var(--sepia);margin-bottom:8px;}
+.path-chain{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.8;}
+.path-chain span{color:var(--sepia);font-weight:500;}
+
+/* ── Tree Visualization ── */
+.tree-container{overflow:auto;padding:20px 0;}
+.tree-wrap{display:flex;flex-direction:column;align-items:flex-start;min-width:600px;}
+.tree-gen{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;position:relative;}
+.tree-connector{display:flex;flex-direction:column;align-items:center;margin-right:4px;}
+.tree-node{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:160px;max-width:220px;cursor:pointer;transition:all 0.15s;position:relative;}
+.tree-node:hover{border-color:var(--sl);box-shadow:0 2px 12px rgba(139,105,20,0.12);}
+.tree-node.root-node{border-color:var(--sepia);border-width:2px;background:var(--sp);}
+.tree-node .tn-name{font-size:13px;font-weight:600;color:var(--ink);}
+.tree-node .tn-dates{font-size:10px;color:var(--muted);margin-top:2px;}
+.tree-node .tn-spouse{font-size:11px;color:var(--sepia);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border);}
+.tree-node .tn-badge{font-size:9px;background:var(--sepia);color:var(--paper);padding:1px 6px;border-radius:8px;display:inline-block;margin-top:3px;}
+.gen-row{margin-bottom:16px;}
+.gen-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;padding:4px 10px;background:var(--paper2);border-radius:6px;display:inline-block;}
+.nodes-row{display:flex;flex-wrap:wrap;gap:8px;}
+.more-badge{background:var(--paper2);border:1px dashed var(--border);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;min-width:100px;}
+
+/* Stat cards */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.stat-card .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;}
+.stat-card .val{font-size:26px;font-family:"JetBrains Mono",monospace;color:var(--sepia);}
+
+/* ── Submit form ── */
+.sub-section{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px;}
+.sub-section h3{font-family:"Playfair Display",serif;font-size:15px;color:var(--sepia);margin-bottom:4px;}
+.sub-section .sub-desc{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;}
+.field input,.field textarea,.field select{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;background:var(--paper);font-size:14px;font-family:"Source Sans 3",sans-serif;color:var(--ink);outline:none;transition:border-color 0.2s;}
+.field input:focus,.field textarea:focus{border-color:var(--sl);}
+.field textarea{resize:vertical;min-height:64px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:560px){.field-row{grid-template-columns:1fr;}}
+.person-entry{background:var(--paper2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;position:relative;}
+.person-entry .remove-btn{position:absolute;top:8px;right:10px;background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer;padding:2px 5px;border-radius:4px;}
+.person-entry .remove-btn:hover{color:#c0392b;background:rgba(192,57,43,0.08);}
+.person-entry h4{font-size:12px;font-weight:600;color:var(--sepia);margin-bottom:8px;}
+.add-row-btn{display:flex;align-items:center;gap:6px;width:100%;padding:8px 14px;background:transparent;border:1.5px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-family:"Source Sans 3",sans-serif;cursor:pointer;justify-content:center;transition:all 0.15s;margin-top:4px;}
+.add-row-btn:hover{border-color:var(--sepia);color:var(--sepia);background:var(--sp);}
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--paper);}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--sepia);background:var(--sp);}
+.upload-zone .uz-icon{font-size:36px;margin-bottom:10px;}
+.upload-zone p{font-size:13px;color:var(--muted);}
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px;}
+.preview-item{position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+.preview-item img{width:100%;height:90px;object-fit:cover;display:block;}
+.preview-item .del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.preview-item .fname{padding:4px 6px;font-size:10px;color:var(--muted);background:var(--paper2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wa-contact{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--sp);border-radius:8px;margin-bottom:8px;}
+.wa-contact .wi{font-size:22px;}
+.wa-contact a{color:var(--sepia);text-decoration:none;font-size:14px;font-weight:500;}
+.wa-contact a:hover{text-decoration:underline;}
+.wa-contact small{display:block;font-size:11px;color:var(--muted);margin-top:1px;}
+.submit-err{color:#c0392b;font-size:13px;margin:8px 0;display:none;}
+.success-banner{background:#f0faf4;border:2px solid #2ecc71;border-radius:12px;padding:28px;text-align:center;display:none;}
+.success-banner .si{font-size:44px;margin-bottom:12px;}
+.success-banner h3{font-family:"Playfair Display",serif;font-size:20px;color:#1a7a4a;margin-bottom:8px;}
+.success-banner p{font-size:13px;color:var(--muted);line-height:1.7;}
+
+@media(max-width:600px){
+  header{padding:12px 14px;}
+  #content{padding:14px;}
+  .htitle h1{font-size:18px;}
+}
+
+/* ── Print / PDF stylesheet ── */
+@media print {
+  /* Hide UI chrome */
+  .stripe, header, .tabs, .search-wrap,
+  .back-btn, .chips, .stats-grid, #loading,
+  .home-btn, .hbadge { display: none !important; }
+
+  /* Hide all buttons in tree — but NOT the expanded content */
+  #tree-output button { display: none !important; }
+
+  /* Print exactly what's visible — do NOT force-show hidden nodes */
+  /* [id^="tc_"] stays as-is: display:none means hidden, display:block means shown */
+
+  body { background: white !important; }
+  #app { display: block !important; }
+  #content { max-width:100% !important; padding:0 !important; margin:0 !important; overflow:visible !important; }
+
+  /* Print header with person name */
+  #tree-output::before {
+    content: 'IB Forest — Family Tree';
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-size: 20pt;
+    color: #8b6914;
+    margin-bottom: 12pt;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid #d4c4a0;
+  }
+
+  /* Tree nodes */
+  .tree-node {
+    break-inside: avoid;
+    border: 0.5pt solid #d4c4a0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    margin-bottom: 4pt;
+  }
+  .root-node {
+    border: 1.5pt solid #8b6914 !important;
+    background: #f0e6c8 !important;
+  }
+  .tn-name { font-size: 10pt !important; }
+  .tn-dates { font-size: 8pt !important; }
+  .tn-spouse { font-size: 8pt !important; }
+  .gen-badge { font-size: 7pt !important; }
+  .more-badge { font-size: 8pt !important; }
+
+  /* Expand tree fully for print */
+  .tree-container { overflow: visible !important; }
+
+  @page {
+    margin: 15mm;
+    size: A4 portrait;
+  }
+}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<header>
+  <div class="logo" onclick="goHome()" title="Home">🌳</div>
+  <div class="htitle" onclick="goHome()">
+    <h1>IB Forest</h1>
+    <p>Our Tribal Family Tree</p>
+  </div>
+  <a class="home-btn" onclick="goHome()" id="home-btn" style="display:none">⌂ Home</a>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+    <div id="user-badge" style="display:flex;align-items:center;gap:8px;"></div>
+    <div class="hbadge" id="stats-badge"><strong>…</strong>loading</div>
+  </div>
+</header>
+
+<!-- Login screen -->
+<div id="login-screen" style="display:none;flex:1;align-items:center;justify-content:center;padding:40px 20px;">
+  <div id="login-card" style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:36px 40px;max-width:420px;width:100%;box-shadow:0 4px 32px rgba(139,105,20,0.08);">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:48px;margin-bottom:10px;">🌳</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;color:var(--sepia);margin-bottom:6px;">IB Forest</h2>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;">Our tribal family tree.<br>Please enter your name to continue.</p>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:5px;">Your name *</label>
+      <input type="text" id="login-name" placeholder="e.g. Zainab Anwar" autocomplete="name"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--paper);font-size:15px;font-family:'Source Sans 3',sans-serif;color:var(--ink);outline:none;transition:border-color 0.2s;"
+        onfocus="this.style.borderColor='var(--sl)'" onblur="this.style.borderColor='var(--border)'"/>
+    </div>
+    <div id="login-err" style="display:none;color:var(--rust);font-size:13px;margin-bottom:12px;padding:8px 12px;background:#fff0f0;border-radius:6px;"></div>
+    <button id="name-btn" onclick="submitName()"
+      style="width:100%;padding:12px;background:var(--sepia);color:var(--paper);border:none;border-radius:8px;font-size:15px;font-family:'Playfair Display',serif;cursor:pointer;transition:background 0.15s;"
+      onmouseover="this.style.background='var(--rust)'" onmouseout="this.style.background='var(--sepia)'">Continue →</button>
+    <div style="margin-top:16px;text-align:center;font-size:12px;color:var(--muted);">
+      Need help? Contact Shiraz on
+      <a href="https://wa.me/919818555830" target="_blank" style="color:var(--sepia);font-weight:500;">WhatsApp +91 98185 55830</a>
+    </div>
+  </div>
+</div>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div style="font-size:14px;color:var(--muted)">Loading family tree…</div>
+</div>
+
+<div id="app">
+  <div class="tabs" id="tabs">
+    <div class="tab" onclick="switchTab('home',this)">🏠 Home</div>
+    <div class="tab active" onclick="switchTab('search',this)">🔍 Search</div>
+    <div class="tab" onclick="switchTab('relation',this)">🔗 Relationship</div>
+    <div class="tab" onclick="switchTab('ancestor',this)">🌿 Common Ancestor</div>
+    <div class="tab" onclick="switchTab('tree',this)">🌳 Tree View</div>
+    <div class="tab" onclick="switchTab('submit',this)">✏️ Submit</div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<script src="tribe_data.js"></script>
+<script>
+(function(){
+var T = null;
+var navHistory = [];
+var currentTab = 'home';
+
+// ── Analytics ─────────────────────────────────────────────────────────────
+var SUPA_URL = 'https://phhzdexhazfltugsilfq.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoaHpkZXhoYXpmbHR1Z3NpbGZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjUxNjYsImV4cCI6MjA5MzEwMTE2Nn0.L-uNTJJJrII5HpqZtmpQRgTO5Vla5ibb0NrPzemIEKI';
+function logEvent(type, data){
+  if(SUPA_KEY.indexOf('REPLACE')>=0) return;
+  try{
+    var payload = data||{};
+    // Tag every event with the logged-in user's name
+    if(currentUser && currentUser.name) payload.user = currentUser.name;
+    fetch(SUPA_URL+'/rest/v1/analytics',{
+      method:'POST',
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+               'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({
+        event_type: type,
+        data: payload,
+        referrer: document.referrer||'direct',
+        user_agent: navigator.userAgent,
+        session_id: getSession(),
+        created_at: new Date().toISOString()
+      })
+    });
+  }catch(e){}
+}
+function getSession(){
+  var k='ibf_session';
+  var s=sessionStorage.getItem(k);
+  if(!s){s='s_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);sessionStorage.setItem(k,s);}
+  return s;
+}
+
+// ── Utility — must be defined before any use ──────────────────────────────
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Login gate ────────────────────────────────────────────────────────────
+var currentUser = null;
+
+var WORD_A = ['oak','rose','moon','star','lake','hill','jade','gold','blue','sage',
+              'pine','dawn','dusk','mist','rain','snow','sun','wind','clay','sand',
+              'silk','teal','ruby','coral','amber','cedar','fern','iris','lark','elm'];
+var WORD_B = ['river','cloud','stone','field','grove','brook','ridge','vale','crest','ford',
+              'bloom','flame','shade','trail','haven','cove','peak','glen','marsh','dune',
+              'light','tide','isle','moor','bank','bay','arch','mill','gate','well'];
+
+function genPassword(){
+  var a = WORD_A[Math.floor(Math.random()*WORD_A.length)];
+  var b = WORD_B[Math.floor(Math.random()*WORD_B.length)];
+  var n = Math.floor(Math.random()*90)+10;
+  return a+'-'+b+'-'+n;
+}
+
+function checkLogin(){
+  var saved = sessionStorage.getItem('ibf_auth');
+  if(saved){ try{ currentUser=JSON.parse(saved); return true; }catch(e){} }
+  return false;
+}
+
+// Step 1 — user submits their name
+window.submitName = async function(){
+  var nameEl = document.getElementById('login-name');
+  var errEl  = document.getElementById('login-err');
+  var uname  = nameEl.value.trim();
+  errEl.style.display='none';
+  if(!uname){ errEl.textContent='Please enter your name.'; errEl.style.display='block'; return; }
+
+  var btn = document.getElementById('name-btn');
+  btn.disabled=true; btn.textContent='Looking up…';
+
+  logEvent('name_entered', {name:uname});
+
+  try{
+    // Check if this person already has a record in visitors table (existing user)
+    var resp = await fetch(SUPA_URL+'/rest/v1/visitors?name=eq.'+encodeURIComponent(uname)+'&select=id,name,password_used,visit_count,blocked',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    var existing = await resp.json();
+
+    if(existing && existing.length>0){
+      // Known visitor
+      if(existing[0].blocked){
+        logEvent('blocked_attempt', {name:uname});
+        errEl.innerHTML = '🛑 Access has been restricted for this name. Please contact <a href="https://wa.me/919818555830" style="color:var(--sepia)">Shiraz on WhatsApp</a> if you believe this is a mistake.';
+        errEl.style.display='block';
+        btn.disabled=false; btn.textContent='Continue →';
+        return;
+      }
+      if(existing[0].password_used){
+        showPasswordStep(uname, false);
+      } else {
+        var newPwd = genPassword();
+        showPasswordStep(uname, true, newPwd);
+      }
+      return;
+    }
+
+    // Brand new name — fuzzy-check against TRIBE data (already loaded in browser)
+    var nameGateResult = checkNameInTree(uname);
+    if(nameGateResult.pass){
+      // Plausible family name — let them in
+      var newPwd = genPassword();
+      showPasswordStep(uname, true, newPwd);
+    } else {
+      // No resemblance to any name in the tree
+      logEvent('unknown_name_attempt', {name:uname, closest: nameGateResult.suggestion});
+      var msg = 'We couldn\'t find <strong>' + esc(uname) + '</strong> in the IB Forest family tree.';
+      if(nameGateResult.suggestion){
+        msg += ' Did you mean <strong>' + esc(nameGateResult.suggestion) + '</strong>?';
+      }
+      msg += ' Please <a href="https://wa.me/919818555830?text=' + encodeURIComponent('Hi Shiraz, I\'d like access to IB Forest. My name is: ' + uname) + '" style="color:var(--sepia)">request access from Shiraz</a>.';
+      errEl.innerHTML = msg;
+      errEl.style.display='block';
+      btn.disabled=false; btn.textContent='Continue →';
+    }
+  } catch(e){
+    errEl.textContent='Connection error. Please try again.';
+    errEl.style.display='block';
+    btn.disabled=false; btn.textContent='Continue →';
+  }
+};
+
+// Name gate: fuzzy-match entered name against all people in TRIBE
+// Returns {pass: true} if a reasonable match is found, else {pass: false, suggestion: 'closest name'}
+function checkNameInTree(input){
+  if(!window.TRIBE) return {pass:true}; // if tree not loaded yet, don't block
+  var q = input.toLowerCase().trim();
+  // Reject obvious garbage: no letters, or all same character, or too short (<3 chars)
+  if(q.length < 3) return {pass:false, suggestion:null};
+  if(!/[a-z]/.test(q)) return {pass:false, suggestion:null};
+  if(q.split('').every(function(c){return c===q[0];})) return {pass:false, suggestion:null};
+
+  var best = null, bestScore = 0;
+  var PASS_THRESHOLD = 20; // fuzzyMatch score needed to consider it a match
+
+  for(var id in window.TRIBE.i){
+    var n = window.TRIBE.i[id].n || '';
+    if(!n) continue;
+    var m = fuzzyMatch(q, n);
+    if(m.score > bestScore){
+      bestScore = m.score;
+      best = n;
+    }
+    if(m.score >= 100) break; // exact match, no need to keep scanning
+  }
+
+  if(bestScore >= PASS_THRESHOLD){
+    return {pass:true};
+  }
+  return {pass:false, suggestion: bestScore >= 10 ? best : null};
+}
+
+function showPasswordStep(uname, isNew, generatedPwd){
+  var card = document.getElementById('login-card');
+  if(isNew){
+    // Track password generation — if login never follows, they abandoned
+    logEvent('password_generated', {name:uname});
+    card.innerHTML = '<div style="text-align:center;margin-bottom:20px">'
+      +'<div style="font-size:40px;margin-bottom:10px">🌳</div>'
+      +'<h2 style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--sepia);margin-bottom:4px">Welcome, '+esc(uname)+'!</h2>'
+      +'<p style="font-size:13px;color:var(--muted)">Here is your personal password</p>'
+      +'</div>'
+      +'<div style="background:var(--sepia);color:var(--paper);border-radius:10px;padding:18px;text-align:center;margin-bottom:16px">'
+      +'<div style="font-size:11px;opacity:0.8;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Your Password</div>'
+      +'<div style="font-size:24px;font-family:\'JetBrains Mono\',monospace;letter-spacing:2px;font-weight:500" id="generated-pwd">'+generatedPwd+'</div>'
+      +'<button onclick="copyPassword(\''+generatedPwd+'\')" style="margin-top:10px;padding:5px 14px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:\'Source Sans 3\',sans-serif;" id="copy-btn">📋 Copy</button>'
+      +'</div>'
+      +'<div style="background:#fffbf0;border:1px solid var(--sl);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6">'
+      +'⚠️ <strong>Please save this password</strong> — you will need it next time you visit. If you lose it, we can generate a new one.'
+      +'</div>'
+      +'<button onclick="completeLogin(\''+esc(uname)+'\',\''+generatedPwd+'\',true)" '
+      +'style="width:100%;padding:12px;background:var(--sepia);color:var(--paper);border:none;border-radius:8px;font-size:15px;font-family:\'Playfair Display\',serif;cursor:pointer;" '
+      +'onmouseover="this.style.background=\'var(--rust)\'" onmouseout="this.style.background=\'var(--sepia)\'">I\'ve saved it — Enter IB Forest</button>';
+  } else {
+    card.innerHTML = '<div style="text-align:center;margin-bottom:20px">'
+      +'<div style="font-size:40px;margin-bottom:10px">🌳</div>'
+      +'<h2 style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--sepia);margin-bottom:4px">Welcome back, '+esc(uname)+'!</h2>'
+      +'<p style="font-size:13px;color:var(--muted)">Enter your password to continue</p>'
+      +'</div>'
+      +'<div style="margin-bottom:14px">'
+      +'<label style="display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:5px">Password</label>'
+      +'<input type="password" id="return-pwd" placeholder="your-saved-password" autocomplete="current-password" '
+      +'style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--paper);font-size:15px;font-family:\'Source Sans 3\',sans-serif;color:var(--ink);outline:none;" />'
+      +'</div>'
+      +'<div id="login-err2" style="display:none;color:var(--rust);font-size:13px;margin-bottom:12px;padding:8px 12px;background:#fff0f0;border-radius:6px;"></div>'
+      +'<button onclick="checkReturnPassword(\''+esc(uname)+'\')" '
+      +'style="width:100%;padding:12px;background:var(--sepia);color:var(--paper);border:none;border-radius:8px;font-size:15px;font-family:\'Playfair Display\',serif;cursor:pointer;margin-bottom:12px;" '
+      +'onmouseover="this.style.background=\'var(--rust)\'" onmouseout="this.style.background=\'var(--sepia)\'">Enter</button>'
+      +'<div style="text-align:center">'
+      +'<button onclick="forgotPassword(\''+esc(uname)+'\')" style="background:none;border:none;color:var(--sepia);cursor:pointer;font-size:12px;font-family:\'Source Sans 3\',sans-serif;text-decoration:underline;">Forgot password? Generate a new one</button>'
+      +'</div>';
+    setTimeout(function(){
+      var p = document.getElementById('return-pwd');
+      if(p){
+        p.focus();
+        p.addEventListener('keydown',function(e){if(e.key==='Enter') checkReturnPassword(uname);});
+      }
+    },50);
+  }
+}
+
+window.copyPassword = function(pwd){
+  navigator.clipboard.writeText(pwd).then(function(){
+    var btn = document.getElementById('copy-btn');
+    if(btn){ btn.textContent='✓ Copied!'; setTimeout(function(){btn.textContent='📋 Copy';},2000); }
+  });
+};
+
+window.checkReturnPassword = async function(uname){
+  var pwdEl = document.getElementById('return-pwd');
+  var errEl = document.getElementById('login-err2');
+  var pwd   = pwdEl.value.trim();
+  errEl.style.display='none';
+  if(!pwd){ errEl.textContent='Please enter your password.'; errEl.style.display='block'; return; }
+
+  try{
+    var resp = await fetch(SUPA_URL+'/rest/v1/visitors?name=eq.'+encodeURIComponent(uname)+'&select=password_used',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    var rows = await resp.json();
+    if(rows && rows.length>0 && rows[0].password_used === pwd){
+      completeLogin(uname, pwd, false);
+    } else {
+      errEl.textContent='Wrong password. Try again or generate a new one below.';
+      errEl.style.display='block';
+      logEvent('login_failed',{name:uname});
+    }
+  } catch(e){
+    errEl.textContent='Connection error. Please try again.';
+    errEl.style.display='block';
+  }
+};
+
+window.forgotPassword = function(uname){
+  logEvent('password_forgotten', {name:uname});
+  var newPwd = genPassword();
+  showPasswordStep(uname, true, newPwd);
+};
+
+window.completeLogin = async function(uname, pwd, isNew){
+  currentUser = {name:uname};
+  sessionStorage.setItem('ibf_auth', JSON.stringify(currentUser));
+  logEvent('login', {name:uname, new_user:isNew});
+
+  // Update visitor record — increment visit_count properly
+  var sid = getSession();
+  var now = new Date().toISOString();
+  try{
+    var getResp = await fetch(SUPA_URL+'/rest/v1/visitors?name=eq.'+encodeURIComponent(uname)+'&select=id,visit_count',{
+      headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+    });
+    var vrows = await getResp.json();
+    if(vrows && vrows.length > 0){
+      var newCount = (vrows[0].visit_count || 0) + 1;
+      fetch(SUPA_URL+'/rest/v1/visitors?id=eq.'+vrows[0].id,{
+        method:'PATCH',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+                 'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({visit_count:newCount, password_used:pwd, last_visit:now, last_seen:now, session_id:sid})
+      });
+    } else {
+      fetch(SUPA_URL+'/rest/v1/visitors',{
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+                 'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({name:uname, password_used:pwd, visit_count:1, session_id:sid, first_visit:now, last_visit:now, last_seen:now})
+      });
+    }
+  }catch(e){}
+
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('loading').style.display='flex';
+  initApp();
+};
+
+window.doLogout = function(){
+  sessionStorage.removeItem('ibf_auth');
+  sessionStorage.removeItem('ibf_session');
+  location.reload();
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', function(){
+  if (!window.TRIBE) {
+    document.getElementById('loading').innerHTML = '<div style="color:var(--rust);padding:20px;text-align:center">Error: tribe_data.js not found.</div>';
+    return;
+  }
+  if(!checkLogin()){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+    setTimeout(function(){
+      var n = document.getElementById('login-name');
+      if(n){
+        n.focus();
+        n.addEventListener('keydown',function(e){if(e.key==='Enter') submitName();});
+      }
+    },50);
+    return;
+  }
+  initApp();
+});
+
+function initApp(){
+  T = window.TRIBE;
+  var ic = Object.keys(T.i).length, fc = Object.keys(T.f).length;
+  document.getElementById('stats-badge').innerHTML = '<strong>'+ic.toLocaleString()+'</strong>people · '+fc+' families';
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app').style.display='flex';
+  // Show logged-in user name + logout button
+  if(currentUser){
+    document.getElementById('user-badge').innerHTML =
+      '<span style="font-size:12px;color:var(--muted)">👤 '+esc(currentUser.name)+'</span>'
+      +' <button onclick="doLogout()" style="font-size:11px;padding:4px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;font-family:\'Source Sans 3\',sans-serif;" onmouseover="this.style.color=\'var(--rust)\'" onmouseout="this.style.color=\'var(--muted)\'">Logout</button>';
+  }
+  logEvent('page_view', {page:'ibforest', user:currentUser?currentUser.name:''});
+  showSearch();
+  switchTabByKey('search');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function name(id){ return T.i[id] ? T.i[id].n : id; }
+function detail(id){
+  if(!T.i[id]) return '';
+  var p=T.i[id], parts=[];
+  if(p.bd||p.bp) parts.push('b. '+[p.bd,p.bp].filter(Boolean).join(', '));
+  if(p.dd||p.dp) parts.push('d. '+[p.dd,p.dp].filter(Boolean).join(', '));
+  return parts.join('  ·  ');
+}
+function sexIcon(s){ return s==='M'?'♂':s==='F'?'♀':''; }
+function getSpouseFams(pid){
+  var r=[];
+  for(var fid in T.f){var f=T.f[fid];if(f.h===pid||f.w===pid){var sp=f.h===pid?f.w:f.h;r.push({fid,sp:sp||'',c:f.c||[],md:f.md||'',mp:f.mp||'',dv:f.dv||'',dvp:f.dvp||'',});}}
+  return r;
+}
+function getParents(pid){
+  var r=[];
+  for(var fid in T.f){var f=T.f[fid];if((f.c||[]).includes(pid)){if(f.h)r.push({role:'father',id:f.h});if(f.w)r.push({role:'mother',id:f.w});}}
+  return r;
+}
+function getChildren(pid){
+  var kids=[];
+  getSpouseFams(pid).forEach(function(sf){kids=kids.concat(sf.c);});
+  return kids;
+}
+
+
+// IMPORTANT: Always use GEDCOM insertion order.
+// Shiraz manually sets the correct birth order in tribalpages — never override with DOB sorting.
+function sortChildren(ids){
+  return ids;
+}
+
+function getChildrenSorted(pid){
+  return getChildren(pid);
+}
+
+// ── Fuzzy search ──────────────────────────────────────────────────────────
+function fuzzyMatch(query, target){
+  var q=query.toLowerCase().trim(), t=target.toLowerCase();
+  if(t.includes(q)) return {score:100-t.indexOf(q), exact:true};
+  // Try each word in query against each word in target
+  var qwords=q.split(/\s+/), twords=t.split(/\s+/);
+  var score=0;
+  qwords.forEach(function(qw){
+    twords.forEach(function(tw){
+      if(tw.startsWith(qw)) score+=50;
+      else if(tw.includes(qw)) score+=30;
+      else if(qw.length>=3 && editDistance(qw,tw)<=2) score+=15;
+    });
+  });
+  return {score, exact:false};
+}
+function editDistance(a,b){
+  var m=a.length,n=b.length,dp=[];
+  for(var i=0;i<=m;i++){dp[i]=[i];for(var j=1;j<=n;j++) dp[i][j]=0;}
+  for(var j=0;j<=n;j++) dp[0][j]=j;
+  for(var i=1;i<=m;i++) for(var j=1;j<=n;j++){
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  }
+  return dp[m][n];
+}
+function searchPeople(query, limit){
+  if(!query||query.trim().length<2) return [];
+  var results=[];
+  for(var id in T.i){
+    var m=fuzzyMatch(query, T.i[id].n||'');
+    if(m.score>0) results.push({id,score:m.score,exact:m.exact});
+  }
+  results.sort(function(a,b){return b.score-a.score;});
+  return results.slice(0,limit||20);
+}
+
+// ── Autocomplete widget ───────────────────────────────────────────────────
+function makeSearchWidget(inputId, dropdownId, onSelect){
+  var inp=document.getElementById(inputId);
+  var dd=document.getElementById(dropdownId);
+  var activeIdx=-1;
+  var items=[];
+  inp.addEventListener('input', function(){
+    activeIdx=-1;
+    var q=inp.value.trim();
+    if(q.length<2){dd.style.display='none';return;}
+    items=searchPeople(q,12);
+    if(!items.length){dd.style.display='none';return;}
+    dd.innerHTML=items.map(function(r,i){
+      var p=T.i[r.id];
+      var det=[p.bd,p.bp].filter(Boolean).join(', ');
+      return '<div class="ac-item" data-idx="'+i+'">'
+        +'<span class="ac-sex">'+sexIcon(p.s)+'</span>'
+        +'<div><div class="ac-name">'+esc(p.n)+'</div>'+(det?'<div class="ac-detail">'+esc(det)+'</div>':'')+'</div></div>';
+    }).join('');
+    dd.style.display='block';
+    dd.querySelectorAll('.ac-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        var idx=parseInt(el.dataset.idx);
+        selectAC(idx);
+      });
+    });
+  });
+  inp.addEventListener('keydown', function(e){
+    var its=dd.querySelectorAll('.ac-item');
+    if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,its.length-1);highlightAC(its);}
+    else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,-1);highlightAC(its);}
+    else if(e.key==='Enter'){e.preventDefault();if(activeIdx>=0)selectAC(activeIdx);else if(items.length>0)selectAC(0);}
+    else if(e.key==='Escape'){dd.style.display='none';}
+  });
+  inp.addEventListener('blur', function(){setTimeout(function(){dd.style.display='none';},150);});
+  function highlightAC(its){its.forEach(function(el,i){el.classList.toggle('active',i===activeIdx);});}
+  function selectAC(idx){
+    if(!items[idx]) return;
+    var r=items[idx];
+    inp.value=name(r.id);
+    dd.style.display='none';
+    if(onSelect) onSelect(r.id, name(r.id));
+  }
+}
+
+// ── Pill HTML ─────────────────────────────────────────────────────────────
+function pillHTML(id){
+  if(!T.i[id]) return '';
+  var p=T.i[id];
+  return '<span class="pill" onclick="showPerson(\''+id+'\')">'
+    +'<span style="font-size:10px">'+sexIcon(p.s)+'</span>'
+    +esc(p.n)+'</span>';
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function setContent(html){
+  var el=document.getElementById('content');
+  el.innerHTML=html;
+  el.scrollTop=0;
+}
+function pushHistory(state){ navHistory.push(state); updateHomeBtn(); }
+function updateHomeBtn(){
+  document.getElementById('home-btn').style.display = navHistory.length>0?'flex':'none';
+}
+window.goHome = function(){
+  navHistory=[];
+  updateHomeBtn();
+  switchTabByKey('home');
+  showHome();
+};
+function switchTabByKey(key){
+  currentTab=key;
+  document.querySelectorAll('.tab').forEach(function(t,i){
+    var keys=['home','search','relation','ancestor','tree','submit'];
+    t.classList.toggle('active', keys[i]===key);
+  });
+}
+window.switchTab = function(key, el){
+  currentTab=key;
+  navHistory=[];
+  updateHomeBtn();
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  if(el) el.classList.add('active');
+  if(key==='home') showHome();
+  else if(key==='search') showSearch();
+  else if(key==='relation') showRelation();
+  else if(key==='ancestor') showAncestor();
+  else if(key==='tree') showTreeView();
+  else if(key==='submit') showSubmit();
+};
+
+window.showPerson = function(id){
+  pushHistory({type:'person',id});
+  var p=T.i[id];
+  if(!p){setContent('<div class="empty"><div class="ei">❓</div><p>Person not found.</p></div>');return;}
+  logEvent('view_person', {id:id, name:p.n});
+  var parents=getParents(id);
+  var sfams=getSpouseFams(id);
+  var siblings=[];
+  var seenSib={};
+  parents.forEach(function(par){
+    getSpouseFams(par.id).forEach(function(sf){
+      sf.c.forEach(function(cid){if(cid!==id&&!seenSib[cid]){seenSib[cid]=true;siblings.push(cid);}});
+    });
+  });
+  var html=backBtn();
+  html+='<div class="card">';
+  html+='<div class="card-title">'+esc(p.n)+'  <span style="font-size:15px;font-weight:400">'+sexIcon(p.s)+'</span></div>';
+  html+='<div class="card-sub">'+id+'</div>';
+  var born=[p.bd,p.bp].filter(Boolean).join(', ');
+  var died=[p.dd,p.dp].filter(Boolean).join(', ');
+  html+='<div class="fact-grid">';
+  if(born) html+=fact('Born',born);
+  if(died) html+=fact('Died',died);
+  if(!born&&!died) html+=fact('Dates','Not recorded');
+  html+='</div>';
+  if(p.nt&&p.nt.trim()) html+='<div class="note-box">'+esc(p.nt.replace(/<[^>]+>/g,'').replace(/&[^;]+;/g,''))+'</div>';
+  if(parents.length){
+    html+='<div class="sec-label">Parents</div>';
+    parents.forEach(function(par){html+=pillHTML(par.id);});
+  }
+  if(siblings.length){
+    html+='<div class="sec-label">Siblings ('+siblings.length+')</div>';
+    siblings.forEach(function(sid){html+=pillHTML(sid);});
+  }
+  sfams.forEach(function(sf){
+    var marr=[sf.md,sf.mp].filter(Boolean).join(', ');
+    var div=[sf.dv,sf.dvp].filter(Boolean).join(', ');
+    html+='<div class="sec-label">Married'+(marr?' — '+marr:'')+(div?' &nbsp;·&nbsp; <span style="color:var(--rust)">Divorced — '+esc(div)+'</span>':'')+'</div>';
+    if(sf.sp) html+=pillHTML(sf.sp);
+    if(sf.c.length){
+      html+='<div class="sec-label">Children ('+sf.c.length+')</div>';
+      sortChildren(sf.c).forEach(function(cid){html+=pillHTML(cid);});
+    }
+  });
+  html+='</div>';
+  html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">';
+  html+='<button class="btn" onclick="showAncestorsFor(\''+id+'\',4)">↑ Ancestors</button>';
+  html+='<button class="btn outline" onclick="showDescendantsFor(\''+id+'\',3)">↓ Descendants</button>';
+  html+='<button class="btn outline" onclick="showTreeFor(\''+id+'\')">🌳 Tree View</button>';
+  html+='</div>';
+  setContent(html);
+};
+
+window.showAncestorsFor = function(id,gens){
+  pushHistory({type:'ancestors',id,gens});
+  var p=T.i[id]; if(!p) return;
+  var byGen={};
+  function recurse(pid,gen){
+    if(gen>gens) return;
+    getParents(pid).forEach(function(par){
+      if(!byGen[gen]) byGen[gen]=[];
+      if(!byGen[gen].find(function(x){return x===par.id;})) byGen[gen].push(par.id);
+      recurse(par.id,gen+1);
+    });
+  }
+  recurse(id,1);
+  var genNames=['','Parents','Grandparents','Great-grandparents','Great-great-grandparents','5th generation','6th generation'];
+  var total=0;
+  var html=backBtn();
+  html+='<div class="card"><div class="card-title">Ancestors of '+esc(p.n)+'</div>';
+  for(var g=1;g<=gens;g++){
+    if(byGen[g]&&byGen[g].length){
+      html+='<div class="gen-badge">'+(genNames[g]||'Gen '+g)+' ('+byGen[g].length+')</div><br>';
+      byGen[g].forEach(function(aid){html+=pillHTML(aid);total++;});
+      html+='<br>';
+    }
+  }
+  if(!total) html+='<p style="color:var(--muted);font-size:14px">No ancestor data recorded.</p>';
+  else html+='<div style="margin-top:10px;font-size:12px;color:var(--muted)">'+total+' ancestors found</div>';
+  html+='</div>';
+  setContent(html);
+};
+
+window.showDescendantsFor = function(id,gens){
+  pushHistory({type:'descendants',id,gens});
+  var p=T.i[id]; if(!p) return;
+  var byGen={};
+  function recurse(pid,gen){
+    if(gen>gens) return;
+    getSpouseFams(pid).forEach(function(sf){
+      sortChildren(sf.c).forEach(function(cid){
+        if(!byGen[gen]) byGen[gen]=[];
+        if(!byGen[gen].includes(cid)) byGen[gen].push(cid);
+        recurse(cid,gen+1);
+      });
+    });
+  }
+  recurse(id,1);
+  var genNames=['','Children','Grandchildren','Great-grandchildren','Great-great-grandchildren'];
+  var total=0;
+  var html=backBtn();
+  html+='<div class="card"><div class="card-title">Descendants of '+esc(p.n)+'</div>';
+  for(var g=1;g<=gens;g++){
+    if(byGen[g]&&byGen[g].length){
+      html+='<div class="gen-badge">'+(genNames[g]||'Gen '+g)+' ('+byGen[g].length+')</div><br>';
+      byGen[g].forEach(function(did){html+=pillHTML(did);total++;});
+      html+='<br>';
+    }
+  }
+  if(!total) html+='<p style="color:var(--muted);font-size:14px">No descendants recorded.</p>';
+  else html+='<div style="margin-top:10px;font-size:12px;color:var(--muted)">'+total+' descendants found</div>';
+  html+='</div>';
+  setContent(html);
+};
+
+function fact(label,value){
+  return '<div class="fact"><div class="fact-lbl">'+label+'</div><div class="fact-val">'+esc(value)+'</div></div>';
+}
+function backBtn(){
+  if(!navHistory.length) return '';
+  return '<div class="back-btn" onclick="goBack()">← Back</div>';
+}
+window.goBack = function(){
+  navHistory.pop();
+  updateHomeBtn();
+  var prev=navHistory[navHistory.length-1];
+  if(!prev){showHome();return;}
+  navHistory.pop();
+  if(prev.type==='person') showPerson(prev.id);
+  else if(prev.type==='ancestors') showAncestorsFor(prev.id,prev.gens);
+  else if(prev.type==='descendants') showDescendantsFor(prev.id,prev.gens);
+  else showHome();
+};
+
+// ── HOME ─────────────────────────────────────────────────────────────────
+function showHome(){
+  currentTab='home';
+  switchTabByKey('home');
+  navHistory=[]; updateHomeBtn();
+  var ic=Object.keys(T.i).length, fc=Object.keys(T.f).length;
+  var withBirth=Object.values(T.i).filter(function(p){return p.bd;}).length;
+  var males=Object.values(T.i).filter(function(p){return p.s==='M';}).length;
+  var females=Object.values(T.i).filter(function(p){return p.s==='F';}).length;
+  var places=new Set(); Object.values(T.i).forEach(function(p){if(p.bp)places.add(p.bp);});
+  var html='<div class="stats-grid">';
+  html+=statCard('Total people',ic.toLocaleString());
+  html+=statCard('Families',fc);
+  html+=statCard('Males',males.toLocaleString());
+  html+=statCard('Females',females.toLocaleString());
+  html+=statCard('With birth dates',withBirth);
+  html+=statCard('Known locations',places.size);
+  html+='</div>';
+  html+='<div class="chips">';
+  ['Search for Shiraz Anwar','People born in Lucknow','People born in Rasra','People born in Kanpur'].forEach(function(c){
+    html+='<div class="chip" onclick="handleHomeChip(\''+c+'\')">'+c+'</div>';
+  });
+  html+='</div>';
+  html+='<div class="card"><div class="card-title" style="margin-bottom:12px">Quick tools</div>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:10px">';
+  html+='<button class="btn" onclick="switchTab(\'search\',document.querySelectorAll(\'.tab\')[1])">🔍 Search people</button>';
+  html+='<button class="btn outline" onclick="switchTab(\'relation\',document.querySelectorAll(\'.tab\')[2])">🔗 Find relationship</button>';
+  html+='<button class="btn outline" onclick="switchTab(\'ancestor\',document.querySelectorAll(\'.tab\')[3])">🌿 Common ancestor</button>';
+  html+='<button class="btn outline" onclick="switchTab(\'tree\',document.querySelectorAll(\'.tab\')[4])">🌳 Tree view</button>';
+  html+='</div></div>';
+  setContent(html);
+}
+function statCard(label,value){
+  return '<div class="stat-card"><div class="lbl">'+label+'</div><div class="val">'+value+'</div></div>';
+}
+window.handleHomeChip = function(text){
+  if(text.startsWith('Search for ')){
+    var n=text.replace('Search for ','');
+    switchTab('search',document.querySelectorAll('.tab')[1]);
+    setTimeout(function(){
+      document.getElementById('search-input')&&(document.getElementById('search-input').value=n);
+      doSearch(n);
+    },50);
+  } else if(text.startsWith('People born in ')){
+    var place=text.replace('People born in ','');
+    showByPlace(place);
+  }
+};
+
+// ── SEARCH ───────────────────────────────────────────────────────────────
+function showSearch(){
+  var html='<div class="search-wrap">'
+    +'<div class="search-row">'
+    +'<input class="search-input" id="search-input" placeholder="Type a name — suggestions appear as you type…" autocomplete="off"/>'
+    +'<button class="btn" onclick="doSearch(document.getElementById(\'search-input\').value)">Search</button>'
+    +'</div>'
+    +'<div class="autocomplete-dropdown" id="search-dd"></div>'
+    +'<div class="search-hint">Try partial names, first names only, or nicknames. Fuzzy matching handles spelling variations.</div>'
+    +'</div>'
+    +'<div id="search-results"></div>';
+  setContent(html);
+  makeSearchWidget('search-input','search-dd',function(id){
+    showPerson(id);
+  });
+  document.getElementById('search-input').addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&document.getElementById('search-dd').style.display==='none'){
+      doSearch(document.getElementById('search-input').value);
+    }
+  });
+  document.getElementById('search-input').focus();
+}
+window.doSearch = function(q){
+  if(!q||q.trim().length<2) return;
+  var results=searchPeople(q,40);
+  var el=document.getElementById('search-results');
+  if(!el) return;
+
+  var notFoundBanner = '<div style="margin-top:16px;padding:14px 18px;background:var(--sp);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">'
+    +'<div style="font-size:13px;color:var(--muted)">Can\'t find who you\'re looking for?</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn outline" style="font-size:12px;padding:7px 14px;" onclick="switchTab(\'submit\',document.querySelectorAll(\'.tab\')[5])">✏️ Submit missing person</button>'
+    +'<a href="https://wa.me/919818555830?text='+encodeURIComponent('Salaam, I am looking for '+q+' in the IB Forest family tree but couldn\'t find them.')+'" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#25D366;color:#fff;border-radius:8px;font-size:12px;text-decoration:none;font-family:\'Source Sans 3\',sans-serif;">💬 Ask on WhatsApp</a>'
+    +'</div>'
+    +'</div>';
+
+  if(!results.length){
+    logEvent('search_not_found', {query:q});
+    el.innerHTML='<div class="empty"><div class="ei">🔍</div>'
+      +'<p>No results for "<strong>'+esc(q)+'</strong>".<br><small>Try a shorter name, first name only, or a different spelling.</small></p>'
+      +'</div>'
+      + notFoundBanner;
+    return;
+  }
+
+  logEvent('search_found', {query:q, count:results.length});
+  var html='<div class="res-count">'+results.length+' results for "'+esc(q)+'"</div>';
+  results.forEach(function(r){
+    var p=T.i[r.id];
+    var born=[p.bd,p.bp].filter(Boolean).join(', ');
+    var died=p.dd||'';
+    html+='<div class="card" style="cursor:pointer" onclick="showPerson(\''+r.id+'\'); pushToSearch();">'
+      +'<div class="card-title">'+esc(p.n)+'  <span style="font-size:13px;font-weight:400">'+sexIcon(p.s)+'</span></div>'
+      +'<div class="card-sub">'+r.id+'</div>';
+    if(born||died){
+      html+='<div class="fact-grid">';
+      if(born) html+=fact('Born',born);
+      if(died) html+=fact('Died',died);
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  // Always show the banner at the bottom of results too
+  html += notFoundBanner;
+  el.innerHTML=html;
+};
+window.pushToSearch = function(){ pushHistory({type:'search'}); };
+
+function showByPlace(place){
+  var results=[];
+  for(var id in T.i){var p=T.i[id];if((p.bp||'').toLowerCase().includes(place.toLowerCase()))results.push(id);}
+  logEvent('browse_location', {place:place, count:results.length});
+  var html=backBtn()+'<div class="res-count"><strong>'+results.length+' people</strong> born in '+esc(place)+'</div>';
+  results.forEach(function(id){
+    var p=T.i[id];
+    html+='<div class="card" style="cursor:pointer;padding:11px 18px" onclick="showPerson(\''+id+'\')">'
+      +'<span style="font-size:14px;font-weight:500">'+esc(p.n)+'</span>'
+      +(p.bd?'<span style="font-size:12px;color:var(--muted);margin-left:10px">b. '+p.bd+'</span>':'')
+      +'</div>';
+  });
+  if(!results.length) html+='<div class="empty"><div class="ei">🌍</div><p>No records for '+esc(place)+'</p></div>';
+  pushHistory({type:'place',place});
+  setContent(html);
+}
+
+// ── RELATIONSHIP ──────────────────────────────────────────────────────────
+var relP1='', relP2='';
+function showRelation(){
+  relP1=''; relP2='';
+  renderRelationUI();
+}
+function renderRelationUI(){
+  var html='<div class="dual-panel">'
+    +'<div class="person-picker">'
+    +'<label>Person 1</label>'
+    +'<div class="search-wrap">'
+    +'<input class="search-input" id="rel1-input" placeholder="Search name…" autocomplete="off"/>'
+    +'<div class="autocomplete-dropdown" id="rel1-dd"></div>'
+    +'</div>'
+    +(relP1?'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(relP1))+'</span><span class="clear" onclick="relP1=\'\';renderRelationUI()">✕</span></div>':'')
+    +'</div>'
+    +'<div class="person-picker">'
+    +'<label>Person 2</label>'
+    +'<div class="search-wrap">'
+    +'<input class="search-input" id="rel2-input" placeholder="Search name…" autocomplete="off"/>'
+    +'<div class="autocomplete-dropdown" id="rel2-dd"></div>'
+    +'</div>'
+    +(relP2?'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(relP2))+'</span><span class="clear" onclick="relP2=\'\';renderRelationUI()">✕</span></div>':'')
+    +'</div>'
+    +'</div>';
+  html+='<button class="btn" onclick="findRelationship()" '+(relP1&&relP2?'':'disabled style="opacity:0.5;cursor:not-allowed"')+'>Find Relationship</button>';
+  setContent(html);
+  makeSearchWidget('rel1-input','rel1-dd',function(id){relP1=id;renderRelationUI();});
+  makeSearchWidget('rel2-input','rel2-dd',function(id){relP2=id;renderRelationUI();});
+  if(relP1) document.getElementById('rel1-input').value=name(relP1);
+  if(relP2) document.getElementById('rel2-input').value=name(relP2);
+}
+window.findRelationship = function(){
+  if(!relP1||!relP2) return;
+  var result=computeRelationship(relP1,relP2);
+  var html=renderRelationUIPart();
+  html+='<div class="result-box">';
+  if(result.error||result.relationship.includes('No connection')){
+    logEvent('relationship_not_found', {p1:name(relP1), p2:name(relP2)});
+    html+='<h4>No connection found</h4><p style="color:var(--muted);font-size:14px">No relationship path found within 12 degrees.</p>';
+  } else {
+    logEvent('relationship_found', {p1:name(relP1), p2:name(relP2), rel:result.relationship, steps:result.degrees});
+    // Always display the natural sentence: senior person first
+    // e.g. "Sarwat Mofiz is the parent of Neha" regardless of box order
+    var rel = result.relationship;
+    var n1 = esc(name(relP1)), n2 = esc(name(relP2));
+    var sentence = '';
+
+    var FLIP = {
+      'child':'parent','parent':'child',
+      'grandchild':'grandparent','grandparent':'grandchild',
+      'great-grandchild':'great-grandparent','great-grandparent':'great-grandchild',
+      'nephew / niece':'uncle / aunt','uncle / aunt':'nephew / niece'
+    };
+
+    var SYMMETRIC = ['spouse','sibling','1st cousin','2nd cousin','1st cousin once removed'];
+
+    if(SYMMETRIC.indexOf(rel) >= 0){
+      if(rel === 'spouse'){
+        sentence = '<strong>'+n1+'</strong> and <strong>'+n2+'</strong> are <strong style="color:var(--sepia)">spouses</strong>';
+      } else {
+        sentence = '<strong>'+n1+'</strong> and <strong>'+n2+'</strong> are <strong style="color:var(--sepia)">'+rel+'s</strong>';
+      }
+    } else if(result.ups > result.downs){
+      var flipped = FLIP[rel] || rel;
+      sentence = '<strong>'+n2+'</strong> is the <strong style="color:var(--sepia)">'+flipped+'</strong> of <strong>'+n1+'</strong>';
+    } else {
+      sentence = '<strong>'+n1+'</strong> is the <strong style="color:var(--sepia)">'+rel+'</strong> of <strong>'+n2+'</strong>';
+    }
+
+    html += '<h4>'+sentence+'</h4>';
+    html+='<div class="path-chain">Path ('+result.degrees+' steps): ';
+    html+=result.path.map(function(n){return '<span>'+esc(n)+'</span>';}).join(' → ');
+    html+='</div>';
+  }
+  html+='</div>';
+  document.getElementById('content').innerHTML=html;
+  makeSearchWidget('rel1-input','rel1-dd',function(id){relP1=id;renderRelationUI();});
+  makeSearchWidget('rel2-input','rel2-dd',function(id){relP2=id;renderRelationUI();});
+};
+function renderRelationUIPart(){
+  return '<div class="dual-panel">'
+    +'<div class="person-picker"><label>Person 1</label>'
+    +'<div class="search-wrap"><input class="search-input" id="rel1-input" value="'+esc(name(relP1))+'" autocomplete="off"/><div class="autocomplete-dropdown" id="rel1-dd"></div></div>'
+    +'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(relP1))+'</span><span class="clear" onclick="relP1=\'\';renderRelationUI()">✕</span></div></div>'
+    +'<div class="person-picker"><label>Person 2</label>'
+    +'<div class="search-wrap"><input class="search-input" id="rel2-input" value="'+esc(name(relP2))+'" autocomplete="off"/><div class="autocomplete-dropdown" id="rel2-dd"></div></div>'
+    +'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(relP2))+'</span><span class="clear" onclick="relP2=\'\';renderRelationUI()">✕</span></div></div>'
+    +'</div>'
+    +'<button class="btn" style="margin-bottom:16px" onclick="findRelationship()">Find Relationship</button>';
+}
+function computeRelationship(id1,id2){
+  if(id1===id2) return {relationship:'Same person',degrees:0,path:[]};
+  function getConn(pid){
+    var c=[];
+    for(var fid in T.f){var f=T.f[fid];if((f.c||[]).includes(pid)){if(f.h)c.push({id:f.h,rel:'parent'});if(f.w)c.push({id:f.w,rel:'parent'});}}
+    getSpouseFams(pid).forEach(function(sf){if(sf.sp)c.push({id:sf.sp,rel:'spouse'});sf.c.forEach(function(cid){c.push({id:cid,rel:'child'});});});
+    return c;
+  }
+  var queue=[{id:id1,path:[{id:id1}]}],visited={};visited[id1]=true;
+  while(queue.length){
+    var cur=queue.shift();if(cur.path.length>13) continue;
+    for(var conn of getConn(cur.id)){
+      if(visited[conn.id]) continue;
+      var np=cur.path.concat([{id:conn.id,rel:conn.rel}]);
+      if(conn.id===id2){
+        var rels=np.slice(1).map(function(x){return x.rel;});
+        var ups=rels.filter(function(r){return r==='parent';}).length;
+        var downs=rels.filter(function(r){return r==='child';}).length;
+        var sp=rels.filter(function(r){return r==='spouse';}).length;
+        var desc='';
+        // ups = number of times we traversed UP (to a parent) → Person1 is BELOW Person2
+        // downs = number of times we traversed DOWN (to a child) → Person1 is ABOVE Person2
+        if(sp===1&&rels.length===1) desc='spouse';
+        else if(ups===1&&downs===0) desc='child';           // went up once: P1 is child of P2
+        else if(ups===0&&downs===1) desc='parent';          // went down once: P1 is parent of P2
+        else if(ups===1&&downs===1&&rels[0]==='parent') desc='sibling';
+        else if(ups===2&&downs===0) desc='grandchild';      // went up twice
+        else if(ups===0&&downs===2) desc='grandparent';     // went down twice
+        else if(ups===2&&downs===1) desc='nephew / niece';
+        else if(ups===1&&downs===2) desc='uncle / aunt';
+        else if(ups===3&&downs===0) desc='great-grandchild';
+        else if(ups===0&&downs===3) desc='great-grandparent';
+        else if(ups===2&&downs===2) desc='1st cousin';
+        else if(ups===3&&downs===3) desc='2nd cousin';
+        else if(ups===3&&downs===2) desc='1st cousin once removed';
+        else if(ups===2&&downs===3) desc='1st cousin once removed';
+        else desc=ups+' up, '+downs+' down';
+        return {relationship:desc, ups:ups, downs:downs, degrees:np.length-1,
+                path:np.map(function(x){return name(x.id);})};
+      }
+      visited[conn.id]=true;queue.push({id:conn.id,path:np});
+    }
+  }
+  return {relationship:'No connection found within 12 degrees', ups:0, downs:0};
+}
+
+// ── COMMON ANCESTOR ───────────────────────────────────────────────────────
+var ancP1='', ancP2='';
+function showAncestor(){
+  ancP1=''; ancP2='';
+  renderAncestorUI();
+}
+function renderAncestorUI(){
+  var html='<div class="dual-panel">'
+    +'<div class="person-picker">'
+    +'<label>Person 1</label>'
+    +'<div class="search-wrap"><input class="search-input" id="anc1-input" placeholder="Search name…" autocomplete="off"/><div class="autocomplete-dropdown" id="anc1-dd"></div></div>'
+    +(ancP1?'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(ancP1))+'</span><span class="clear" onclick="ancP1=\'\';renderAncestorUI()">✕</span></div>':'')
+    +'</div>'
+    +'<div class="person-picker">'
+    +'<label>Person 2</label>'
+    +'<div class="search-wrap"><input class="search-input" id="anc2-input" placeholder="Search name…" autocomplete="off"/><div class="autocomplete-dropdown" id="anc2-dd"></div></div>'
+    +(ancP2?'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(ancP2))+'</span><span class="clear" onclick="ancP2=\'\';renderAncestorUI()">✕</span></div>':'')
+    +'</div>'
+    +'</div>';
+  html+='<button class="btn" onclick="findCommonAncestor()" '+(ancP1&&ancP2?'':'disabled style="opacity:0.5;cursor:not-allowed"')+'>Find Common Ancestor</button>';
+  setContent(html);
+  makeSearchWidget('anc1-input','anc1-dd',function(id){ancP1=id;renderAncestorUI();});
+  makeSearchWidget('anc2-input','anc2-dd',function(id){ancP2=id;renderAncestorUI();});
+  if(ancP1) document.getElementById('anc1-input').value=name(ancP1);
+  if(ancP2) document.getElementById('anc2-input').value=name(ancP2);
+}
+window.findCommonAncestor = function(){
+  if(!ancP1||!ancP2) return;
+  function getAncPaths(startId){
+    var paths={},queue=[{id:startId,path:[startId]}],visited={};
+    while(queue.length){
+      var cur=queue.shift();if(visited[cur.id]) continue;visited[cur.id]=true;
+      for(var fid in T.f){
+        var f=T.f[fid];
+        if((f.c||[]).includes(cur.id)){
+          [f.h,f.w].forEach(function(par){
+            if(par&&!visited[par]){
+              var np=cur.path.concat([par]);
+              if(!paths[par]||np.length<paths[par].length) paths[par]=np;
+              queue.push({id:par,path:np});
+            }
+          });
+        }
+      }
+    }
+    return paths;
+  }
+  var a1=getAncPaths(ancP1),a2=getAncPaths(ancP2);
+  var common=[];
+  for(var aid in a1){if(a2[aid]){common.push({id:aid,p1:a1[aid],p2:a2[aid],dist:a1[aid].length+a2[aid].length-2});}}
+  common.sort(function(a,b){return a.dist-b.dist;});
+
+  var html='<div class="dual-panel">'
+    +'<div class="person-picker"><label>Person 1</label>'
+    +'<div class="search-wrap"><input class="search-input" id="anc1-input" value="'+esc(name(ancP1))+'" autocomplete="off"/><div class="autocomplete-dropdown" id="anc1-dd"></div></div>'
+    +'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(ancP1))+'</span><span class="clear" onclick="ancP1=\'\';renderAncestorUI()">✕</span></div></div>'
+    +'<div class="person-picker"><label>Person 2</label>'
+    +'<div class="search-wrap"><input class="search-input" id="anc2-input" value="'+esc(name(ancP2))+'" autocomplete="off"/><div class="autocomplete-dropdown" id="anc2-dd"></div></div>'
+    +'<div class="selected-person" style="margin-top:8px"><span>'+esc(name(ancP2))+'</span><span class="clear" onclick="ancP2=\'\';renderAncestorUI()">✕</span></div></div>'
+    +'</div>'
+    +'<button class="btn" style="margin-bottom:16px" onclick="findCommonAncestor()">Find Common Ancestor</button>';
+
+  if(!common.length){
+    logEvent('ancestor_not_found', {p1:name(ancP1), p2:name(ancP2)});
+    html+='<div class="result-box"><h4>No common ancestor found</h4><p style="color:var(--muted);font-size:14px">No shared ancestor could be found between these two people in the tree.</p></div>';
+  } else {
+    var best=common[0];
+    logEvent('ancestor_found', {p1:name(ancP1), p2:name(ancP2), ancestor:name(best.id), dist:best.dist});
+    html+='<div class="result-box">';
+    html+='<h4>Closest common ancestor: <strong style="color:var(--sepia)">'+esc(name(best.id))+'</strong></h4>';
+    var g1=best.p1.length-1,g2=best.p2.length-1;
+    html+='<div style="font-size:13px;color:var(--muted);margin:6px 0">'+g1+' generations from '+esc(name(ancP1))+'  ·  '+g2+' generations from '+esc(name(ancP2))+'</div>';
+    html+='<div class="path-chain">'+esc(name(ancP1))+' line: ';
+    html+=best.p1.map(function(n){return '<span>'+esc(name(n))+'</span>';}).join(' → ');
+    html+='</div><div class="path-chain" style="margin-top:6px">'+esc(name(ancP2))+' line: ';
+    html+=best.p2.map(function(n){return '<span>'+esc(name(n))+'</span>';}).join(' → ');
+    html+='</div>';
+    if(common.length>1){
+      html+='<div style="margin-top:12px;font-size:12px;font-weight:500;color:var(--muted)">Other common ancestors:</div>';
+      common.slice(1,5).forEach(function(c){
+        html+='<div style="font-size:13px;color:var(--muted);margin-top:4px">• '+esc(name(c.id))+' ('+esc(name(ancP1))+': '+(c.p1.length-1)+' gen, '+esc(name(ancP2))+': '+(c.p2.length-1)+' gen)</div>';
+      });
+    }
+    html+='</div>';
+  }
+  document.getElementById('content').innerHTML=html;
+  makeSearchWidget('anc1-input','anc1-dd',function(id){ancP1=id;renderAncestorUI();});
+  makeSearchWidget('anc2-input','anc2-dd',function(id){ancP2=id;renderAncestorUI();});
+};
+
+// ── TREE VIEW ─────────────────────────────────────────────────────────────
+var treePersonId='', treeGens=3;
+
+function showTreeView(){
+  treePersonId=''; treeGens=3;
+  renderTreeSetup();
+}
+
+window.showTreeFor = function(id){
+  treePersonId=id; treeGens=3;
+  switchTabByKey('tree');
+  renderTreeSetup();
+};
+
+function genBtns(){
+  return [1,2,3,4,5,6,7].map(function(g){
+    return '<button class="btn '+(treeGens===g?'':'outline')+'" id="gbtn'+g+'" onclick="'
+      +'treeGens='+g+';'
+      +'[1,2,3,4,5,6,7].forEach(function(x){var b=document.getElementById(\'gbtn\'+x);if(b)b.className=\'btn \'+(x==='+g+'?\'\':\'outline\');});'
+      +'[\'expand-depth-top\',\'expand-depth-bot\'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=\'⊞ Expand \'+'+g+'+\' levels\';});'
+      +'">'+g+'</button>';
+  }).join('');
+}
+
+function renderTreeSetup(){
+  var personRow = treePersonId
+    ? '<div id="tree-selected" style="margin:10px 0 4px;padding:10px 14px;background:var(--sp);border-radius:8px;font-size:14px;font-weight:500;color:var(--sepia)">✓ '+esc(name(treePersonId))+'</div>'
+    : '<div id="tree-selected"></div>';
+
+  var html = '<div class="card">'
+    +'<div class="card-title" style="margin-bottom:10px">🌳 Family Tree Visualization</div>'
+    +'<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Search for a person. Use <strong>＋</strong> to expand any branch, <strong>－</strong> to collapse. The generation selector controls how deep auto-expand goes when printing.</p>'
+    +'<div class="search-wrap" style="margin-bottom:0">'
+    +'<div class="search-row"><input class="search-input" id="tree-search" placeholder="Type a name to search…" autocomplete="off" value="'+(treePersonId?esc(name(treePersonId)):'')+'"/></div>'
+    +'<div class="autocomplete-dropdown" id="tree-dd"></div>'
+    +'</div>'
+    +personRow
+    +'<div style="margin:14px 0 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+    +'<span style="font-size:13px;color:var(--muted)">PDF depth:</span>'
+    +genBtns()
+    +'</div>'
+    +'<button class="btn" id="gen-tree-btn" onclick="doRenderTree()"'+(treePersonId?'':' disabled style="opacity:0.5;cursor:not-allowed"')+'>Generate Tree</button>'
+    +'</div>'
+    +'<div id="tree-output" style="margin-top:8px"></div>';
+
+  setContent(html);
+
+  makeSearchWidget('tree-search','tree-dd', function(id, nm){
+    treePersonId = id;
+    var sel = document.getElementById('tree-selected');
+    if(sel) sel.innerHTML = '✓ '+esc(nm);
+    var btn = document.getElementById('gen-tree-btn');
+    if(btn){ btn.removeAttribute('disabled'); btn.style.opacity='1'; btn.style.cursor='pointer'; }
+  });
+}
+
+// ── Build one node — collapsed by default, toggle expand/collapse ──────────
+function buildNode(pid, gen){
+  var p = T.i[pid]; if(!p) return '';
+  var sfams = getSpouseFams(pid);
+  var kids = [];
+  sfams.forEach(function(sf){ kids = kids.concat(sf.c); });
+  kids = sortChildren(kids);
+
+  var born = [p.bd, p.bp].filter(Boolean).join(', ');
+  var nodeClass = 'tree-node' + (gen===0?' root-node':'');
+
+  var spHtml = '';
+  sfams.forEach(function(sf, idx){
+    if(sf.sp && T.i[sf.sp]){
+      var marr = [sf.md, sf.mp].filter(Boolean).join(', ');
+      var div  = sf.dv ? ' div.'+sf.dv : '';
+      spHtml += '<div class="tn-spouse">× '+esc(T.i[sf.sp].n)
+        +(marr?' <span style="font-size:9px">('+esc(marr+(div?' · '+div:''))+')</span>':'')
+        +(div&&!marr?' <span style="font-size:9px;color:var(--rust)">(div. '+esc(sf.dv)+')</span>':'')
+        +'</div>';
+    }
+    if(sfams.length>1 && idx>0) spHtml += '<div class="tn-badge">Marriage '+(idx+1)+'</div>';
+  });
+
+  var nodeId = 'tn_'+pid+'_'+gen;
+  var childId = 'tc_'+pid+'_'+gen;
+
+  var html = '<div id="'+nodeId+'">'
+    +'<div class="'+nodeClass+'" onclick="showPerson(\''+pid+'\')" style="cursor:pointer">'
+    +'<div class="tn-name">'+esc(p.n)+'</div>'
+    +(born?'<div class="tn-dates">'+esc(born)+'</div>':'')
+    +spHtml
+    +'</div>';
+
+  if(kids.length){
+    // Expand button
+    html += '<div style="margin-left:20px;margin-top:3px">'
+      +'<button class="btn outline" style="font-size:11px;padding:3px 9px;" '
+      +'id="ebtn_'+pid+'_'+gen+'" '
+      +'onclick="toggleNode(\''+pid+'\','+gen+',\''+childId+'\',\'ebtn_'+pid+'_'+gen+'\')">＋ '+kids.length+' children</button>'
+      +'</div>'
+    // Children container — hidden by default
+      +'<div id="'+childId+'" style="display:none;margin-left:20px;padding-left:14px;border-left:2px solid var(--border);margin-top:4px">';
+    var genLabels = ['Children','Grandchildren','Great-grandchildren','4th gen','5th gen','6th gen','7th gen','8th gen'];
+    html += '<div class="gen-badge" style="margin-bottom:6px">'+(genLabels[gen]||'Gen '+(gen+1))+' ('+kids.length+')</div>';
+    kids.forEach(function(cid){ html += buildNode(cid, gen+1); });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// ── Toggle expand / collapse ───────────────────────────────────────────────
+window.toggleNode = function(pid, gen, childId, btnId){
+  var childEl = document.getElementById(childId);
+  var btnEl   = document.getElementById(btnId);
+  if(!childEl || !btnEl) return;
+
+  var sfams = getSpouseFams(pid);
+  var kids = [];
+  sfams.forEach(function(sf){ kids = kids.concat(sf.c); });
+
+  if(childEl.style.display === 'none'){
+    childEl.style.display = 'block';
+    btnEl.textContent = '－ '+kids.length+' children';
+  } else {
+    childEl.style.display = 'none';
+    btnEl.textContent = '＋ '+kids.length+' children';
+  }
+};
+
+// ── Expand all nodes up to treeGens depth ─────────────────────────────────
+window.expandAllToDepth = function(){
+  // Show all child containers within depth limit
+  document.querySelectorAll('[id^="tc_"]').forEach(function(el){
+    var parts = el.id.split('_'); // tc_PID_GEN
+    var gen = parseInt(parts[parts.length-1]);
+    if(gen < treeGens){
+      el.style.display = 'block';
+      // Update corresponding button
+      var pid = parts.slice(1, parts.length-1).join('_');
+      var btn = document.getElementById('ebtn_'+pid+'_'+gen);
+      if(btn){
+        var sfams = getSpouseFams(pid);
+        var kcount = sfams.reduce(function(n,sf){return n+sf.c.length;},0);
+        btn.textContent = '－ '+kcount+' children';
+      }
+    }
+  });
+};
+
+window.collapseAll = function(){
+  document.querySelectorAll('[id^="tc_"]').forEach(function(el){
+    el.style.display = 'none';
+    var parts = el.id.split('_');
+    var gen = parseInt(parts[parts.length-1]);
+    var pid = parts.slice(1, parts.length-1).join('_');
+    var btn = document.getElementById('ebtn_'+pid+'_'+gen);
+    if(btn){
+      var sfams = getSpouseFams(pid);
+      var kcount = sfams.reduce(function(n,sf){return n+sf.c.length;},0);
+      btn.textContent = '＋ '+kcount+' children';
+    }
+  });
+};
+
+// ── Render the tree ────────────────────────────────────────────────────────
+window.doRenderTree = function(){
+  if(!treePersonId){ return; }
+  var root = treePersonId;
+  var el = document.getElementById('tree-output');
+  if(!el) return;
+
+  var personName = name(root);
+  logEvent('tree_view', {id:root, name:personName, gens:treeGens});
+
+  var barStyle = 'padding:14px 18px;background:var(--sp);border:1px solid var(--border);'
+    +'border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;';
+
+  var actionBtns = '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button id="expand-depth-top" onclick="expandAllToDepth()" class="btn outline" style="font-size:12px;padding:7px 14px;">⊞ Expand '+treeGens+' levels</button>'
+    +'<button onclick="collapseAll()" class="btn outline" style="font-size:12px;padding:7px 14px;">⊟ Collapse all</button>'
+    +'<button onclick="downloadTreePDF()" class="btn" style="font-size:12px;padding:7px 14px;display:flex;align-items:center;gap:5px;">⬇ Download PDF</button>'
+    +'</div>';
+
+  var barContent = '<div style="font-size:13px;color:var(--muted)">🌳 <strong style="color:var(--sepia)">'
+    +esc(personName)+'</strong></div>'+actionBtns;
+
+  var html = '<div style="'+barStyle+'margin-bottom:14px;">'+barContent+'</div>';
+  html += '<div class="tree-container">';
+  html += buildNode(root, 0);
+  html += '</div>';
+  el.innerHTML = html;
+
+  // Bottom bar — clone with different ID for expand button
+  var botContent = barContent.replace('expand-depth-top','expand-depth-bot');
+  var bot = document.createElement('div');
+  bot.style.cssText = barStyle + 'margin-top:16px;';
+  bot.innerHTML = botContent;
+  el.appendChild(bot);
+};
+
+window.downloadTreePDF = function(){
+  var origTitle = document.title;
+  var personName = treePersonId ? name(treePersonId) : '';
+  logEvent('tree_print', {id: treePersonId, name: personName});
+  document.title = 'IB Forest — ' + (personName || 'Family Tree') + ' Tree';
+  window.print();
+  setTimeout(function(){ document.title = origTitle; }, 1000);
+};
+
+window.renderTree = window.doRenderTree;
+
+function renderTreeSetup(){
+  var personRow = treePersonId
+    ? '<div id="tree-selected" style="margin:10px 0 4px;padding:10px 14px;background:var(--sp);border-radius:8px;font-size:14px;font-weight:500;color:var(--sepia)">✓ '+esc(name(treePersonId))+'</div>'
+    : '<div id="tree-selected"></div>';
+
+  var html = '<div class="card">'
+    +'<div class="card-title" style="margin-bottom:10px">🌳 Family Tree Visualization</div>'
+    +'<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Search for a person and pick how many generations to pre-load (1–7). Each node shows an <strong>Expand</strong> button to reveal children one level at a time.</p>'
+    +'<div class="search-wrap" style="margin-bottom:0">'
+    +'<div class="search-row"><input class="search-input" id="tree-search" placeholder="Type a name to search…" autocomplete="off" value="'+(treePersonId?esc(name(treePersonId)):'')+'"/></div>'
+    +'<div class="autocomplete-dropdown" id="tree-dd"></div>'
+    +'</div>'
+    +personRow
+    +'<div style="margin:14px 0 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+    +'<span style="font-size:13px;color:var(--muted)">Generations:</span>'
+    +genBtns()
+    +'</div>'
+    +'<button class="btn" id="gen-tree-btn" onclick="doRenderTree()"'+(treePersonId?'':' disabled style="opacity:0.5;cursor:not-allowed"')+'>Generate Tree</button>'
+    +'</div>'
+    +'<div id="tree-output" style="margin-top:8px"></div>';
+
+  setContent(html);
+
+  makeSearchWidget('tree-search','tree-dd', function(id, nm){
+    treePersonId = id;
+    var sel = document.getElementById('tree-selected');
+    if(sel) sel.innerHTML = '✓ '+esc(nm);
+    var btn = document.getElementById('gen-tree-btn');
+    if(btn){ btn.removeAttribute('disabled'); btn.style.opacity='1'; btn.style.cursor='pointer'; }
+  });
+}
+
+// ── SUBMIT MISSING PERSON ────────────────────────────────────────────────
+var uploadedFiles = [];
+var spouseCount=0, childCount=0, siblingCount=0;
+
+function showSubmit(){
+  uploadedFiles=[]; spouseCount=0; childCount=0; siblingCount=0;
+
+  var html = '';
+
+  // Header
+  html += '<div class="sub-section">'
+    +'<h3>✏️ Submit a Missing Person</h3>'
+    +'<div class="sub-desc">Help us complete the IB Forest family tree. Fill in whatever details you know — even partial information is valuable. You can also upload a handwritten note or diagram.</div>'
+    +'</div>';
+
+  // Submitter details
+  html += '<div class="sub-section">'
+    +'<h3>Your details</h3>'
+    +'<div class="sub-desc">So we can follow up if needed</div>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Your name *</label><input type="text" id="sub-name" placeholder="e.g. Zainab Anwar"/></div>'
+    +'<div class="field"><label>Your WhatsApp / Phone</label><input type="tel" id="sub-phone" placeholder="+91 98765 43210"/></div>'
+    +'</div>'
+    +'</div>';
+
+  // Person details
+  html += '<div class="sub-section">'
+    +'<h3>About the person</h3>'
+    +'<div class="sub-desc">The person you are adding. Fill in whatever you know.</div>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Full name *</label><input type="text" id="p-name" placeholder="e.g. Mohammad Zahid Ahmad"/></div>'
+    +'<div class="field"><label>Gender</label>'
+    +'<select id="p-sex"><option value="">—</option><option value="M">Male</option><option value="F">Female</option></select>'
+    +'</div></div>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Date of birth</label><input type="text" id="p-dob" placeholder="e.g. 1965 or Mar 15 1965"/></div>'
+    +'<div class="field"><label>Place of birth</label><input type="text" id="p-pob" placeholder="e.g. Rasra, UP"/></div>'
+    +'</div>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Date of death (if applicable)</label><input type="text" id="p-dod" placeholder="e.g. 2018"/></div>'
+    +'<div class="field"><label>Place of death</label><input type="text" id="p-pod" placeholder="e.g. Kanpur"/></div>'
+    +'</div>'
+    +'<div class="field"><label>Notes / nickname / profession</label>'
+    +'<textarea id="p-notes" placeholder="Any other details — profession, nicknames, place of residence…"></textarea>'
+    +'</div>'
+    +'</div>';
+
+  // Parents
+  html += '<div class="sub-section">'
+    +'<h3>Parents</h3>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Father\'s name</label><input type="text" id="p-father" placeholder="Full name"/></div>'
+    +'<div class="field"><label>Mother\'s name</label><input type="text" id="p-mother" placeholder="Full name"/></div>'
+    +'</div>'
+    +'</div>';
+
+  // Spouses
+  html += '<div class="sub-section">'
+    +'<h3>Spouse(s)</h3>'
+    +'<div class="sub-desc">Add one or more marriages</div>'
+    +'<div id="spouse-list"></div>'
+    +'<button class="add-row-btn" onclick="addSubSpouse()">＋ Add spouse</button>'
+    +'</div>';
+
+  // Children
+  html += '<div class="sub-section">'
+    +'<h3>Children</h3>'
+    +'<div id="children-list"></div>'
+    +'<button class="add-row-btn" onclick="addSubChild()">＋ Add child</button>'
+    +'</div>';
+
+  // Siblings
+  html += '<div class="sub-section">'
+    +'<h3>Siblings</h3>'
+    +'<div id="siblings-list"></div>'
+    +'<button class="add-row-btn" onclick="addSubSibling()">＋ Add sibling</button>'
+    +'</div>';
+
+  // Upload
+  html += '<div class="sub-section">'
+    +'<h3>Upload handwritten notes or diagrams (optional)</h3>'
+    +'<div class="sub-desc">Photos of family records, handwritten shajra, old documents — any format welcome</div>'
+    +'<div class="upload-zone" id="sub-drop-zone" onclick="document.getElementById(\'sub-file-input\').click()">'
+    +'<div class="uz-icon">📄</div>'
+    +'<p>Click to upload or drag & drop here<br><small>JPEG, PNG, PDF — up to 5 files</small></p>'
+    +'</div>'
+    +'<input type="file" id="sub-file-input" accept="image/*,.pdf" multiple style="display:none"/>'
+    +'<div class="preview-grid" id="sub-preview-grid"></div>'
+    +'</div>';
+
+  // Type of submission
+  html += '<div class="sub-section">'
+    +'<h3>Type of submission</h3>'
+    +'<div class="field">'
+    +'<select id="sub-type">'
+    +'<option value="new_person">New person not in the tree</option>'
+    +'<option value="correction">Correction to existing entry</option>'
+    +'<option value="new_birth">New birth</option>'
+    +'<option value="new_marriage">New marriage</option>'
+    +'<option value="death">Death / passing</option>'
+    +'<option value="other">Other</option>'
+    +'</select>'
+    +'</div>'
+    +'<div class="field"><label>Additional notes</label>'
+    +'<textarea id="sub-extra" placeholder="Anything else you\'d like to add…"></textarea>'
+    +'</div>'
+    +'</div>';
+
+  // Contact directly
+  html += '<div class="sub-section">'
+    +'<h3>Or reach out directly</h3>'
+    +'<div class="sub-desc">In case of any confusion, feel free to contact Shiraz directly</div>'
+    +'<div class="wa-contact">'
+    +'<span class="wi">💬</span>'
+    +'<div><a href="https://wa.me/919818555830" target="_blank">WhatsApp: +91 98185 55830</a>'
+    +'<small>Send your notes, photos, or voice message</small>'
+    +'</div></div>'
+    +'</div>';
+
+  // Error + submit button + success
+  html += '<div class="submit-err" id="sub-err"></div>';
+  html += '<button class="btn" id="sub-btn" onclick="doSubmit()" style="width:100%;padding:13px;font-size:15px;font-family:\'Playfair Display\',serif;display:flex;align-items:center;justify-content:center;gap:8px;">'
+    +'<span id="sub-spin" class="spin" style="display:none;width:16px;height:16px;border-width:2px;border-top-color:#fff;"></span>'
+    +'<span id="sub-label">📤 Submit to IB Forest</span>'
+    +'</button>';
+  html += '<div class="success-banner" id="sub-success">'
+    +'<div class="si">✅</div>'
+    +'<h3>Submitted — JazakAllah Khair!</h3>'
+    +'<p>Shiraz will review your submission and update the tree.<br>You may receive a follow-up message on WhatsApp if more details are needed.<br><br>'
+    +'<span style="color:var(--sepia)">You can also reach Shiraz directly: <a href="https://wa.me/919818555830" style="color:var(--sepia)">+91 98185 55830</a></span></p>'
+    +'</div>';
+
+  setContent(html);
+
+  // Wire up file upload
+  var dz = document.getElementById('sub-drop-zone');
+  dz.addEventListener('dragover', function(e){e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave', function(){dz.classList.remove('drag-over');});
+  dz.addEventListener('drop', function(e){e.preventDefault();dz.classList.remove('drag-over');handleSubFiles(e.dataTransfer.files);});
+  document.getElementById('sub-file-input').addEventListener('change', function(e){handleSubFiles(e.target.files);});
+}
+
+window.addSubSpouse = function(){
+  spouseCount++;
+  var id='sub-sp-'+spouseCount;
+  var d=document.createElement('div');
+  d.className='person-entry'; d.id=id;
+  d.innerHTML='<button class="remove-btn" onclick="document.getElementById(\''+id+'\').remove()">✕</button>'
+    +'<h4>Spouse '+spouseCount+'</h4>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Full name</label><input type="text" name="sp_nm_'+spouseCount+'" placeholder="Full name"/></div>'
+    +'<div class="field"><label>Marriage date</label><input type="text" name="sp_md_'+spouseCount+'" placeholder="e.g. 1990"/></div>'
+    +'</div>';
+  document.getElementById('spouse-list').appendChild(d);
+};
+
+window.addSubChild = function(){
+  childCount++;
+  var id='sub-ch-'+childCount;
+  var d=document.createElement('div');
+  d.className='person-entry'; d.id=id;
+  d.innerHTML='<button class="remove-btn" onclick="document.getElementById(\''+id+'\').remove()">✕</button>'
+    +'<h4>Child '+childCount+'</h4>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Full name</label><input type="text" name="ch_nm_'+childCount+'" placeholder="Full name"/></div>'
+    +'<div class="field"><label>Gender</label>'
+    +'<select name="ch_sx_'+childCount+'"><option value="">—</option><option value="M">Male</option><option value="F">Female</option></select>'
+    +'</div></div>'
+    +'<div class="field"><label>Date of birth</label><input type="text" name="ch_dob_'+childCount+'" placeholder="e.g. 1995"/></div>';
+  document.getElementById('children-list').appendChild(d);
+};
+
+window.addSubSibling = function(){
+  siblingCount++;
+  var id='sub-sib-'+siblingCount;
+  var d=document.createElement('div');
+  d.className='person-entry'; d.id=id;
+  d.innerHTML='<button class="remove-btn" onclick="document.getElementById(\''+id+'\').remove()">✕</button>'
+    +'<h4>Sibling '+siblingCount+'</h4>'
+    +'<div class="field-row">'
+    +'<div class="field"><label>Full name</label><input type="text" name="sib_nm_'+siblingCount+'" placeholder="Full name"/></div>'
+    +'<div class="field"><label>Gender</label>'
+    +'<select name="sib_sx_'+siblingCount+'"><option value="">—</option><option value="M">Male</option><option value="F">Female</option></select>'
+    +'</div></div>';
+  document.getElementById('siblings-list').appendChild(d);
+};
+
+function handleSubFiles(files){
+  Array.from(files).slice(0, 5-uploadedFiles.length).forEach(function(file){
+    if(file.size>10*1024*1024){alert(file.name+' is too large (max 10MB)');return;}
+    var reader=new FileReader();
+    reader.onload=function(e){
+      uploadedFiles.push({name:file.name,base64:e.target.result,type:file.type});
+      renderSubPreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function renderSubPreviews(){
+  var g=document.getElementById('sub-preview-grid');
+  if(!g) return;
+  g.innerHTML=uploadedFiles.map(function(f,i){
+    var isImg=f.type.startsWith('image/');
+    return '<div class="preview-item">'
+      +(isImg?'<img src="'+f.base64+'" alt=""/>':'<div style="height:90px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--paper2)">📄</div>')
+      +'<button class="del" onclick="uploadedFiles.splice('+i+',1);renderSubPreviews()">✕</button>'
+      +'<div class="fname">'+f.name+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+window.doSubmit = async function(){
+  var subName = (document.getElementById('sub-name')||{value:''}).value.trim();
+  var pName   = (document.getElementById('p-name')||{value:''}).value.trim();
+  var errEl   = document.getElementById('sub-err');
+  errEl.style.display='none';
+
+  if(!subName){errEl.textContent='Please enter your name.';errEl.style.display='block';return;}
+  if(!pName){errEl.textContent="Please enter the person's name.";errEl.style.display='block';return;}
+
+  // Collect structured data
+  var spouses=[], children=[], siblings=[];
+  document.querySelectorAll('[name^="sp_nm_"]').forEach(function(el){
+    var n=el.name.split('_').pop(), nm=el.value.trim();
+    if(nm) spouses.push({name:nm, marr_date:(document.querySelector('[name="sp_md_'+n+'"]')||{value:''}).value.trim()});
+  });
+  document.querySelectorAll('[name^="ch_nm_"]').forEach(function(el){
+    var n=el.name.split('_').pop(), nm=el.value.trim();
+    if(nm) children.push({name:nm,
+      sex:(document.querySelector('[name="ch_sx_'+n+'"]')||{value:''}).value,
+      dob:(document.querySelector('[name="ch_dob_'+n+'"]')||{value:''}).value.trim()});
+  });
+  document.querySelectorAll('[name^="sib_nm_"]').forEach(function(el){
+    var n=el.name.split('_').pop(), nm=el.value.trim();
+    if(nm) siblings.push({name:nm, sex:(document.querySelector('[name="sib_sx_'+n+'"]')||{value:''}).value});
+  });
+
+  var payload = {
+    submitted_by: subName,
+    update_type: (document.getElementById('sub-type')||{value:'new_person'}).value,
+    about_person: pName,
+    contact: (document.getElementById('sub-phone')||{value:''}).value.trim(),
+    status: 'new',
+    details: JSON.stringify({
+      person:{
+        name:pName,
+        sex:(document.getElementById('p-sex')||{value:''}).value,
+        dob:(document.getElementById('p-dob')||{value:''}).value.trim(),
+        pob:(document.getElementById('p-pob')||{value:''}).value.trim(),
+        dod:(document.getElementById('p-dod')||{value:''}).value.trim(),
+        pod:(document.getElementById('p-pod')||{value:''}).value.trim(),
+        notes:(document.getElementById('p-notes')||{value:''}).value.trim()
+      },
+      father:(document.getElementById('p-father')||{value:''}).value.trim(),
+      mother:(document.getElementById('p-mother')||{value:''}).value.trim(),
+      spouses:spouses,
+      children:children,
+      siblings:siblings,
+      extra_notes:(document.getElementById('sub-extra')||{value:''}).value.trim(),
+      attachments:uploadedFiles.length,
+      files:uploadedFiles.slice(0,2).map(function(f){return {name:f.name,type:f.type,data:f.base64};})
+    })
+  };
+
+  // Disable button
+  var btn=document.getElementById('sub-btn');
+  if(btn){btn.disabled=true;document.getElementById('sub-spin').style.display='inline-block';
+    document.getElementById('sub-label').textContent='Submitting…';}
+
+  try {
+    // Save to Supabase using shared credentials
+    if(SUPA_KEY.indexOf('REPLACE') < 0){
+      await fetch(SUPA_URL+'/rest/v1/family_updates', {
+        method:'POST',
+        headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,
+                 'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify(payload)
+      });
+    }
+    logEvent('submission', {person:pName, type:payload.update_type, by:subName});
+
+    // WhatsApp notification to Shiraz
+    var spStr = spouses.map(function(s){return s.name;}).join(', ');
+    var chStr = children.map(function(c){return c.name;}).join(', ');
+    var waMsg = '🌳 *IB Forest — New Submission*\n\n'
+      +'*From:* '+subName+'\n'
+      +'*Phone:* '+((document.getElementById('sub-phone')||{value:''}).value.trim()||'—')+'\n'
+      +'*Person:* '+pName+'\n'
+      +'*Type:* '+payload.update_type.replace(/_/g,' ')+'\n'
+      +(JSON.parse(payload.details).father?'*Father:* '+JSON.parse(payload.details).father+'\n':'')
+      +(spStr?'*Spouse(s):* '+spStr+'\n':'')
+      +(chStr?'*Children:* '+chStr+'\n':'')
+      +(uploadedFiles.length?'*Attachments:* '+uploadedFiles.length+' file(s)\n':'')
+      +'\nPlease check admin panel for full details.';
+
+    window.open('https://wa.me/919818555830?text='+encodeURIComponent(waMsg), '_blank');
+
+    // Show success
+    document.getElementById('sub-success').style.display='block';
+    if(btn) btn.style.display='none';
+    document.getElementById('sub-success').scrollIntoView({behavior:'smooth'});
+
+  } catch(e) {
+    if(btn){btn.disabled=false;document.getElementById('sub-spin').style.display='none';
+      document.getElementById('sub-label').textContent='📤 Submit to IB Forest';}
+    errEl.textContent='Submission failed: '+e.message+'. Please WhatsApp Shiraz directly at +91 98185 55830.';
+    errEl.style.display='block';
+  }
+};
+
+})();
+</script>
+</body>
+</html>
