@@ -277,7 +277,7 @@ function parseRef(ref) {
   if (r.includes('whatsapp')) return 'WhatsApp';
   if (r.includes('twitter') || r.includes('x.com')) return 'Twitter/X';
   if (r.includes('instagram')) return 'Instagram';
-  try { return new URL(ref).hostname.replace('www.', ''); } catch(e) { return ref.slice(0,5000); }
+  try { return new URL(ref).hostname.replace('www.', ''); } catch(e) { return ref.slice(0,500); }
 }
 
 function counter(arr) {
