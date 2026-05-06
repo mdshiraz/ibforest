@@ -102,10 +102,13 @@ header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;alig
 .path-chain span{color:var(--sepia);font-weight:500;}
 
 /* ── Tree Visualization ── */
-.tree-container{overflow:auto;padding:20px 0;}
-.tree-wrap{display:flex;flex-direction:column;align-items:flex-start;min-width:600px;}
-.tree-gen{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;position:relative;}
-.tree-connector{display:flex;flex-direction:column;align-items:center;margin-right:4px;}
+.tree-container{overflow:auto;padding:20px;}
+.h-node-row{display:flex;flex-direction:row;align-items:flex-start;margin:4px 0;}
+.h-card-col{display:flex;flex-direction:column;align-items:stretch;}
+.h-connector-h{width:20px;border-top:2px solid var(--border);flex-shrink:0;align-self:center;margin-top:4px;}
+.h-children-wrap{display:flex;flex-direction:row;align-items:flex-start;}
+.h-children-col{display:flex;flex-direction:column;gap:6px;border-left:2px solid var(--border);padding-left:12px;}
+.h-child-stub{width:14px;border-top:2px solid var(--border);flex-shrink:0;align-self:center;margin-top:4px;}
 .tree-node{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:160px;max-width:220px;cursor:pointer;transition:all 0.15s;position:relative;}
 .tree-node:hover{border-color:var(--sl);box-shadow:0 2px 12px rgba(139,105,20,0.12);}
 .tree-node.root-node{border-color:var(--sepia);border-width:2px;background:var(--sp);}
@@ -1325,7 +1328,7 @@ function renderTreeSetup(){
   });
 }
 
-// ── Build one node — collapsed by default, toggle expand/collapse ──────────
+// ── Build one node — horizontal layout, collapsed by default ───────────────
 function buildNode(pid, gen){
   var p = T.i[pid]; if(!p) return '';
   var sfams = getSpouseFams(pid);
@@ -1352,7 +1355,9 @@ function buildNode(pid, gen){
   var nodeId = 'tn_'+pid+'_'+gen;
   var childId = 'tc_'+pid+'_'+gen;
 
-  var html = '<div id="'+nodeId+'">'
+  // Horizontal: [card+button] ── [children column]
+  var html = '<div id="'+nodeId+'" class="h-node-row">'
+    +'<div class="h-card-col">'
     +'<div class="'+nodeClass+'" onclick="showPerson(\''+pid+'\')" style="cursor:pointer">'
     +'<div class="tn-name">'+esc(p.n)+'</div>'
     +(born?'<div class="tn-dates">'+esc(born)+'</div>':'')
@@ -1360,21 +1365,26 @@ function buildNode(pid, gen){
     +'</div>';
 
   if(kids.length){
-    // Expand button
-    html += '<div style="margin-left:20px;margin-top:3px">'
-      +'<button class="btn outline" style="font-size:11px;padding:3px 9px;" '
-      +'id="ebtn_'+pid+'_'+gen+'" '
-      +'onclick="toggleNode(\''+pid+'\','+gen+',\''+childId+'\',\'ebtn_'+pid+'_'+gen+'\')">＋ '+kids.length+' children</button>'
-      +'</div>'
-    // Children container — hidden by default
-      +'<div id="'+childId+'" style="display:none;margin-left:20px;padding-left:14px;border-left:2px solid var(--border);margin-top:4px">';
-    var genLabels = ['Children','Grandchildren','Great-grandchildren','4th gen','5th gen','6th gen','7th gen','8th gen'];
-    html += '<div class="gen-badge" style="margin-bottom:6px">'+(genLabels[gen]||'Gen '+(gen+1))+' ('+kids.length+')</div>';
-    kids.forEach(function(cid){ html += buildNode(cid, gen+1); });
-    html += '</div>';
+    html += '<button class="btn outline" id="ebtn_'+pid+'_'+gen+'" '
+      +'style="font-size:11px;padding:3px 9px;margin-top:3px;" '
+      +'onclick="toggleNode(\''+pid+'\','+gen+',\''+childId+'\',\'ebtn_'+pid+'_'+gen+'\')">＋ '+kids.length+' children</button>';
+  }
+  html += '</div>'; // close h-card-col
+
+  if(kids.length){
+    html += '<div id="'+childId+'" style="display:none;flex-direction:row;align-items:flex-start;">'
+      +'<div class="h-connector-h"></div>'
+      +'<div class="h-children-col">';
+    kids.forEach(function(cid){
+      html += '<div style="display:flex;flex-direction:row;align-items:flex-start;">'
+        +'<div class="h-child-stub"></div>'
+        +buildNode(cid, gen+1)
+        +'</div>';
+    });
+    html += '</div></div>'; // close h-children-col + children container
   }
 
-  html += '</div>';
+  html += '</div>'; // close h-node-row
   return html;
 }
 
@@ -1389,7 +1399,7 @@ window.toggleNode = function(pid, gen, childId, btnId){
   sfams.forEach(function(sf){ kids = kids.concat(sf.c); });
 
   if(childEl.style.display === 'none'){
-    childEl.style.display = 'block';
+    childEl.style.display = 'flex';
     btnEl.textContent = '－ '+kids.length+' children';
   } else {
     childEl.style.display = 'none';
@@ -1404,7 +1414,7 @@ window.expandAllToDepth = function(){
     var parts = el.id.split('_'); // tc_PID_GEN
     var gen = parseInt(parts[parts.length-1]);
     if(gen < treeGens){
-      el.style.display = 'block';
+      el.style.display = 'flex';
       // Update corresponding button
       var pid = parts.slice(1, parts.length-1).join('_');
       var btn = document.getElementById('ebtn_'+pid+'_'+gen);
