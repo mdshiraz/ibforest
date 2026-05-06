@@ -102,16 +102,24 @@ header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;alig
 .path-chain span{color:var(--sepia);font-weight:500;}
 
 /* ── Tree Visualization ── */
-.tree-container{overflow:auto;padding:20px;}
-.family-unit{display:inline-flex;flex-direction:column;align-items:center;}
+.tree-container{overflow:auto;padding:10px 0;}
+.chart-wrap{display:flex;flex-direction:column;align-items:center;gap:0;}
+.section-connector{width:2px;height:22px;background:var(--border);}
+.gen-section{width:100%;border:1px solid var(--border);border-radius:10px;padding:16px 20px;background:var(--bg);}
+.gen-section-header{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;}
+.gen-section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;}
+.focus-section{border-color:var(--sepia);background:var(--sp);}
+.sec-toggle{background:none;border:1px solid var(--border);border-radius:4px;padding:1px 8px;font-size:12px;cursor:pointer;color:var(--muted);line-height:1.4;}
+.families-row{display:flex;flex-direction:row;align-items:flex-start;gap:16px;flex-wrap:wrap;justify-content:center;}
+.family-block{display:flex;flex-direction:column;align-items:center;}
 .couple-row{display:flex;flex-direction:row;align-items:center;gap:4px;}
 .marriage-symbol{font-size:15px;color:var(--sepia);flex-shrink:0;padding:0 2px;}
 .collapse-btn{padding:3px 11px;font-size:11px;background:var(--paper);border:1px solid var(--border);border-radius:20px;cursor:pointer;color:var(--sepia);white-space:nowrap;flex-shrink:0;transition:background 0.15s;}
 .collapse-btn:hover{background:var(--sp);}
-.connector-v{width:2px;height:14px;background:var(--border);}
-.children-section{display:flex;flex-direction:column;align-items:center;}
-.gen-label{font-size:10px;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;padding:3px 10px;margin-bottom:10px;}
-.children-row{display:flex;flex-direction:row;align-items:flex-start;gap:10px;flex-wrap:wrap;border-top:2px solid var(--border);padding-top:12px;}
+.connector-v{width:2px;height:12px;background:var(--border);}
+.children-area{display:flex;flex-direction:column;align-items:center;}
+.gen-label{font-size:10px;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;padding:3px 10px;margin-bottom:8px;}
+.children-row-h{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap;justify-content:center;border-top:2px solid var(--border);padding-top:10px;}
 .tree-node{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:140px;max-width:200px;cursor:pointer;transition:all 0.15s;position:relative;}
 .tree-node:hover{border-color:var(--sl);box-shadow:0 2px 12px rgba(139,105,20,0.12);}
 .tree-node.root-node{border-color:var(--sepia);border-width:2px;background:var(--sp);}
@@ -1318,109 +1326,227 @@ function renderTreeSetup(){
   });
 }
 
-// ── Build one family unit — couple side by side, children in a row below ───
-function buildNode(pid, gen){
+// ── Atom: single person card ───────────────────────────────────────────────
+function buildPersonCard(pid, extraClass){
   var p = T.i[pid]; if(!p) return '';
-  var sfams = getSpouseFams(pid);
-  var kids = [];
-  sfams.forEach(function(sf){ kids = kids.concat(sf.c); });
-  kids = sortChildren(kids);
-
   var born = [p.bd, p.bp].filter(Boolean).join(', ');
-  var nodeClass = 'tree-node' + (gen===0?' root-node':'');
-  var nodeId = 'tn_'+pid+'_'+gen;
-  var childId = 'tc_'+pid+'_'+gen;
+  return '<div class="tree-node'+(extraClass?' '+extraClass:'')+'" onclick="showPerson(\''+pid+'\')" style="cursor:pointer">'
+    +'<div class="tn-name">'+esc(p.n)+'</div>'
+    +(born?'<div class="tn-dates">'+esc(born)+'</div>':'')
+    +'</div>';
+}
 
-  // Spouse cards (⊕ symbol + card for each spouse)
-  var spouseHtml = '';
-  sfams.forEach(function(sf, idx){
+// ── Atom: ⊕ + spouse cards for all marriages of pid ──────────────────────
+function buildSpouseCards(sfams){
+  var html = '';
+  sfams.forEach(function(sf){
     if(sf.sp && T.i[sf.sp]){
       var sp = T.i[sf.sp];
       var spBorn = [sp.bd, sp.bp].filter(Boolean).join(', ');
       var marr = [sf.md, sf.mp].filter(Boolean).join(', ');
-      spouseHtml += '<div class="marriage-symbol">⊕</div>'
+      html += '<div class="marriage-symbol">⊕</div>'
         +'<div class="tree-node spouse-node" onclick="showPerson(\''+sf.sp+'\')" style="cursor:pointer">'
         +'<div class="tn-name">'+esc(sp.n)+'</div>'
         +(spBorn?'<div class="tn-dates">'+esc(spBorn)+'</div>':'')
         +(marr?'<div class="tn-dates">M · '+esc(marr)+'</div>':'')
         +'</div>';
-      if(sfams.length>1 && idx>0) spouseHtml += '<div class="tn-badge" style="align-self:center">Marriage '+(idx+1)+'</div>';
     }
   });
-
-  var html = '<div id="'+nodeId+'" class="family-unit">'
-    +'<div class="couple-row">'
-    +'<div class="'+nodeClass+'" onclick="showPerson(\''+pid+'\')" style="cursor:pointer">'
-    +'<div class="tn-name">'+esc(p.n)+'</div>'
-    +(born?'<div class="tn-dates">'+esc(born)+'</div>':'')
-    +'</div>'
-    +spouseHtml;
-
-  if(kids.length){
-    html += '<button class="collapse-btn" id="ebtn_'+pid+'_'+gen+'" '
-      +'onclick="toggleNode(\''+pid+'\','+gen+',\''+childId+'\',\'ebtn_'+pid+'_'+gen+'\')">▶ '+kids.length+' children</button>';
-  }
-  html += '</div>'; // close couple-row
-
-  if(kids.length){
-    html += '<div id="'+childId+'" class="children-section" style="display:none">'
-      +'<div class="connector-v"></div>'
-      +'<div class="gen-label">Children ('+kids.length+')</div>'
-      +'<div class="children-row">';
-    kids.forEach(function(cid){ html += buildNode(cid, gen+1); });
-    html += '</div></div>'; // close children-row + children-section
-  }
-
-  html += '</div>'; // close family-unit
   return html;
 }
 
-// ── Toggle expand / collapse ───────────────────────────────────────────────
-window.toggleNode = function(pid, gen, childId, btnId){
-  var childEl = document.getElementById(childId);
-  var btnEl   = document.getElementById(btnId);
-  if(!childEl || !btnEl) return;
+// ── Find the family record where pid appears as a child ────────────────────
+function getParentFam(pid){
+  var fams = T.f || {};
+  for(var fid in fams){
+    var f = fams[fid]; if(f.c && f.c.indexOf(pid)>=0) return f;
+  }
+  return null;
+}
 
-  var sfams = getSpouseFams(pid);
-  var kids = [];
-  sfams.forEach(function(sf){ kids = kids.concat(sf.c); });
+// ── Walk up ancestor chain; returns [{fam}] index-0=parents ───────────────
+function getAncestorChain(pid){
+  var chain=[], cur=pid;
+  for(var i=0;i<4;i++){
+    var pf=getParentFam(cur); if(!pf) break;
+    chain.push(pf);
+    cur=pf.h||pf.w; if(!cur) break;
+  }
+  return chain;
+}
 
-  if(childEl.style.display === 'none'){
-    childEl.style.display = 'flex';
-    btnEl.textContent = '▼ '+kids.length+' children';
+// ── BFS downward; returns [[gen1 pids],[gen2 pids],…] ─────────────────────
+function getDescendantGens(rootPid){
+  var gens=[], sfams=getSpouseFams(rootPid), gen1=[];
+  sfams.forEach(function(sf){ gen1=gen1.concat(sf.c); });
+  gen1=sortChildren(gen1);
+  if(!gen1.length) return [];
+  var cur=gen1;
+  while(cur.length && gens.length<6){
+    gens.push(cur);
+    var next=[];
+    cur.forEach(function(pid){ getSpouseFams(pid).forEach(function(sf){ next=next.concat(sf.c); }); });
+    cur=sortChildren(next);
+  }
+  return gens;
+}
+
+// ── Render one ancestor section (couple card, no children shown) ───────────
+function renderAncestorSection(fam, genNum, contentId){
+  return '<div class="gen-section anc-section">'
+    +'<div class="gen-section-header">'
+    +'<span class="gen-section-title">▲ Ancestor Generation '+genNum+'</span>'
+    +'<button class="sec-toggle" onclick="toggleSection(\''+contentId+'\',this)">−</button>'
+    +'</div>'
+    +'<div id="'+contentId+'" class="families-row">'
+    +(fam.h&&T.i[fam.h]?buildPersonCard(fam.h):'')
+    +(fam.h&&fam.w&&T.i[fam.w]?'<div class="marriage-symbol">⊕</div>':'')
+    +(fam.w&&T.i[fam.w]?buildPersonCard(fam.w):'')
+    +'</div></div>';
+}
+
+// ── Render the focus person section ───────────────────────────────────────
+function renderFocusSection(pid){
+  var sfams=getSpouseFams(pid), kids=[];
+  sfams.forEach(function(sf){ kids=kids.concat(sf.c); });
+  kids=sortChildren(kids);
+
+  var childrenHtml='';
+  if(kids.length){
+    childrenHtml='<div id="fc_focus" class="children-area">'
+      +'<div class="connector-v"></div>'
+      +'<div class="gen-label">Children ('+kids.length+')</div>'
+      +'<div class="children-row-h">';
+    kids.forEach(function(kid){ childrenHtml+=buildPersonCard(kid); });
+    childrenHtml+='</div></div>';
+  }
+
+  var toggleBtn=kids.length
+    ?'<button class="collapse-btn" id="ebtn_focus" onclick="toggleFamilyChildren(\'fc_focus\',\'ebtn_focus\','+kids.length+')">▼ '+kids.length+' children</button>'
+    :'';
+
+  return '<div class="gen-section focus-section">'
+    +'<div class="gen-section-header"><span class="gen-section-title">📍 Focus Person</span></div>'
+    +'<div class="families-row">'
+    +'<div class="family-block">'
+    +'<div class="couple-row">'+buildPersonCard(pid,'root-node')+buildSpouseCards(sfams)+toggleBtn+'</div>'
+    +childrenHtml
+    +'</div></div></div>';
+}
+
+// ── Render one family block for a descendant section ──────────────────────
+function renderFamilyBlock(pid){
+  var sfams=getSpouseFams(pid), kids=[];
+  sfams.forEach(function(sf){ kids=kids.concat(sf.c); });
+  kids=sortChildren(kids);
+
+  var toggleBtn=kids.length
+    ?'<button class="collapse-btn" id="ebtn_'+pid+'" onclick="toggleFamilyChildren(\'fc_'+pid+'\',\'ebtn_'+pid+'\','+kids.length+')">▶ '+kids.length+' children</button>'
+    :'';
+
+  var childrenHtml='';
+  if(kids.length){
+    childrenHtml='<div id="fc_'+pid+'" class="children-area" style="display:none">'
+      +'<div class="connector-v"></div>'
+      +'<div class="gen-label">Children ('+kids.length+')</div>'
+      +'<div class="children-row-h">';
+    kids.forEach(function(kid){ childrenHtml+=buildPersonCard(kid); });
+    childrenHtml+='</div></div>';
+  }
+
+  return '<div class="family-block">'
+    +'<div class="couple-row">'+buildPersonCard(pid)+buildSpouseCards(sfams)+toggleBtn+'</div>'
+    +childrenHtml
+    +'</div>';
+}
+
+// ── Render one descendant generation section ───────────────────────────────
+function renderDescendantSection(pids, genNum, contentId){
+  var withFamily=pids.filter(function(pid){
+    return getSpouseFams(pid).some(function(sf){ return sf.sp||sf.c.length; });
+  });
+  if(!withFamily.length) return '';
+
+  var html='<div class="gen-section">'
+    +'<div class="gen-section-header">'
+    +'<span class="gen-section-title">▼ Descendant Generation '+genNum+'</span>'
+    +'<button class="sec-toggle" onclick="toggleSection(\''+contentId+'\',this)">−</button>'
+    +'</div>'
+    +'<div id="'+contentId+'" class="families-row">';
+  withFamily.forEach(function(pid){ html+=renderFamilyBlock(pid); });
+  html+='</div></div>';
+  return html;
+}
+
+// ── Master chart renderer ──────────────────────────────────────────────────
+function renderFamilyChart(rootPid){
+  var html='<div class="chart-wrap">';
+
+  // Ancestors — oldest at top
+  var chain=getAncestorChain(rootPid);
+  var rev=chain.slice().reverse();
+  rev.forEach(function(fam,idx){
+    var genNum=rev.length-idx;
+    if(idx>0) html+='<div class="section-connector"></div>';
+    html+=renderAncestorSection(fam, genNum, 'sc-anc-'+genNum);
+  });
+  if(chain.length) html+='<div class="section-connector"></div>';
+
+  // Focus
+  html+=renderFocusSection(rootPid);
+
+  // Descendants
+  var descGens=getDescendantGens(rootPid);
+  descGens.forEach(function(gen,idx){
+    var sec=renderDescendantSection(gen, idx+1, 'sc-desc-'+(idx+1));
+    if(sec){ html+='<div class="section-connector"></div>'+sec; }
+  });
+
+  html+='</div>';
+  return html;
+}
+
+// ── Toggle a family's children container ──────────────────────────────────
+window.toggleFamilyChildren = function(containerId, btnId, kcount){
+  var el=document.getElementById(containerId);
+  var btn=document.getElementById(btnId);
+  if(!el||!btn) return;
+  if(el.style.display==='none'){
+    el.style.display='flex'; btn.textContent='▼ '+kcount+' children';
   } else {
-    childEl.style.display = 'none';
-    btnEl.textContent = '▶ '+kids.length+' children';
+    el.style.display='none'; btn.textContent='▶ '+kcount+' children';
   }
 };
 
-// ── Expand all nodes ───────────────────────────────────────────────────────
+// ── Toggle an entire section ───────────────────────────────────────────────
+window.toggleSection = function(contentId, btn){
+  var el=document.getElementById(contentId);
+  if(!el) return;
+  if(el.style.display==='none'){ el.style.display='flex'; btn.textContent='−'; }
+  else { el.style.display='none'; btn.textContent='+'; }
+};
+
+// ── Expand / collapse all family children containers ──────────────────────
 window.expandAllToDepth = function(){
-  document.querySelectorAll('[id^="tc_"]').forEach(function(el){
-    el.style.display = 'flex';
-    var parts = el.id.split('_');
-    var gen = parseInt(parts[parts.length-1]);
-    var pid = parts.slice(1, parts.length-1).join('_');
-    var btn = document.getElementById('ebtn_'+pid+'_'+gen);
+  document.querySelectorAll('[id^="fc_"]').forEach(function(el){
+    el.style.display='flex';
+    var pid=el.id.slice(3); // strip 'fc_'
+    var btn=document.getElementById('ebtn_'+pid);
     if(btn){
-      var sfams = getSpouseFams(pid);
-      var kcount = sfams.reduce(function(n,sf){return n+sf.c.length;},0);
-      btn.textContent = '▼ '+kcount+' children';
+      var sfams=getSpouseFams(pid==='focus'?treePersonId:pid);
+      btn.textContent='▼ '+sfams.reduce(function(n,sf){return n+sf.c.length;},0)+' children';
     }
   });
 };
 
 window.collapseAll = function(){
-  document.querySelectorAll('[id^="tc_"]').forEach(function(el){
-    el.style.display = 'none';
-    var parts = el.id.split('_');
-    var gen = parseInt(parts[parts.length-1]);
-    var pid = parts.slice(1, parts.length-1).join('_');
-    var btn = document.getElementById('ebtn_'+pid+'_'+gen);
+  document.querySelectorAll('[id^="fc_"]').forEach(function(el){
+    el.style.display='none';
+    var pid=el.id.slice(3);
+    var btn=document.getElementById('ebtn_'+pid);
     if(btn){
-      var sfams = getSpouseFams(pid);
-      var kcount = sfams.reduce(function(n,sf){return n+sf.c.length;},0);
-      btn.textContent = '▶ '+kcount+' children';
+      var sfams=getSpouseFams(pid==='focus'?treePersonId:pid);
+      btn.textContent='▶ '+sfams.reduce(function(n,sf){return n+sf.c.length;},0)+' children';
     }
   });
 };
@@ -1428,35 +1554,32 @@ window.collapseAll = function(){
 // ── Render the tree ────────────────────────────────────────────────────────
 window.doRenderTree = function(){
   if(!treePersonId){ return; }
-  var root = treePersonId;
-  var el = document.getElementById('tree-output');
+  var root=treePersonId;
+  var el=document.getElementById('tree-output');
   if(!el) return;
 
-  var personName = name(root);
-  logEvent('tree_view', {id:root, name:personName, gens:treeGens});
+  var personName=name(root);
+  logEvent('tree_view', {id:root, name:personName});
 
-  var barStyle = 'padding:14px 18px;background:var(--sp);border:1px solid var(--border);'
+  var barStyle='padding:14px 18px;background:var(--sp);border:1px solid var(--border);'
     +'border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;';
 
-  var actionBtns = '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+  var actionBtns='<div style="display:flex;gap:8px;flex-wrap:wrap">'
     +'<button onclick="expandAllToDepth()" class="btn outline" style="font-size:12px;padding:7px 14px;">⊞ Expand all</button>'
     +'<button onclick="collapseAll()" class="btn outline" style="font-size:12px;padding:7px 14px;">⊟ Collapse all</button>'
     +'<button onclick="downloadTreePDF()" class="btn" style="font-size:12px;padding:7px 14px;display:flex;align-items:center;gap:5px;">⬇ Print tree</button>'
     +'</div>';
 
-  var barContent = '<div style="font-size:13px;color:var(--muted)">🌳 <strong style="color:var(--sepia)">'
+  var barContent='<div style="font-size:13px;color:var(--muted)">🌳 <strong style="color:var(--sepia)">'
     +esc(personName)+'</strong></div>'+actionBtns;
 
-  var html = '<div style="'+barStyle+'margin-bottom:14px;">'+barContent+'</div>';
-  html += '<div class="tree-container">';
-  html += buildNode(root, 0);
-  html += '</div>';
-  el.innerHTML = html;
+  var html='<div style="'+barStyle+'margin-bottom:14px;">'+barContent+'</div>';
+  html+='<div class="tree-container">'+renderFamilyChart(root)+'</div>';
+  el.innerHTML=html;
 
-  // Bottom bar
-  var bot = document.createElement('div');
-  bot.style.cssText = barStyle + 'margin-top:16px;';
-  bot.innerHTML = barContent;
+  var bot=document.createElement('div');
+  bot.style.cssText=barStyle+'margin-top:16px;';
+  bot.innerHTML=barContent;
   el.appendChild(bot);
 };
 
