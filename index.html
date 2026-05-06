@@ -103,18 +103,21 @@ header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;alig
 
 /* ── Tree Visualization ── */
 .tree-container{overflow:auto;padding:20px;}
-.h-node-row{display:flex;flex-direction:row;align-items:flex-start;margin:4px 0;}
-.h-card-col{display:flex;flex-direction:column;align-items:stretch;}
-.h-connector-h{width:20px;border-top:2px solid var(--border);flex-shrink:0;align-self:center;margin-top:4px;}
-.h-children-wrap{display:flex;flex-direction:row;align-items:flex-start;}
-.h-children-col{display:flex;flex-direction:column;gap:6px;border-left:2px solid var(--border);padding-left:12px;}
-.h-child-stub{width:14px;border-top:2px solid var(--border);flex-shrink:0;align-self:center;margin-top:4px;}
-.tree-node{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:160px;max-width:220px;cursor:pointer;transition:all 0.15s;position:relative;}
+.family-unit{display:inline-flex;flex-direction:column;align-items:center;}
+.couple-row{display:flex;flex-direction:row;align-items:center;gap:4px;}
+.marriage-symbol{font-size:15px;color:var(--sepia);flex-shrink:0;padding:0 2px;}
+.collapse-btn{padding:3px 11px;font-size:11px;background:var(--paper);border:1px solid var(--border);border-radius:20px;cursor:pointer;color:var(--sepia);white-space:nowrap;flex-shrink:0;transition:background 0.15s;}
+.collapse-btn:hover{background:var(--sp);}
+.connector-v{width:2px;height:14px;background:var(--border);}
+.children-section{display:flex;flex-direction:column;align-items:center;}
+.gen-label{font-size:10px;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;padding:3px 10px;margin-bottom:10px;}
+.children-row{display:flex;flex-direction:row;align-items:flex-start;gap:10px;flex-wrap:wrap;border-top:2px solid var(--border);padding-top:12px;}
+.tree-node{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:140px;max-width:200px;cursor:pointer;transition:all 0.15s;position:relative;}
 .tree-node:hover{border-color:var(--sl);box-shadow:0 2px 12px rgba(139,105,20,0.12);}
 .tree-node.root-node{border-color:var(--sepia);border-width:2px;background:var(--sp);}
+.tree-node.spouse-node{border-color:#9b8dc4;}
 .tree-node .tn-name{font-size:13px;font-weight:600;color:var(--ink);}
 .tree-node .tn-dates{font-size:10px;color:var(--muted);margin-top:2px;}
-.tree-node .tn-spouse{font-size:11px;color:var(--sepia);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border);}
 .tree-node .tn-badge{font-size:9px;background:var(--sepia);color:var(--paper);padding:1px 6px;border-radius:8px;display:inline-block;margin-top:3px;}
 .gen-row{margin-bottom:16px;}
 .gen-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;padding:4px 10px;background:var(--paper2);border-radius:6px;display:inline-block;}
@@ -1286,16 +1289,6 @@ window.showTreeFor = function(id){
   renderTreeSetup();
 };
 
-function genBtns(){
-  return [1,2,3,4,5,6,7].map(function(g){
-    return '<button class="btn '+(treeGens===g?'':'outline')+'" id="gbtn'+g+'" onclick="'
-      +'treeGens='+g+';'
-      +'[1,2,3,4,5,6,7].forEach(function(x){var b=document.getElementById(\'gbtn\'+x);if(b)b.className=\'btn \'+(x==='+g+'?\'\':\'outline\');});'
-      +'[\'expand-depth-top\',\'expand-depth-bot\'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=\'⊞ Expand \'+'+g+'+\' levels\';});'
-      +'">'+g+'</button>';
-  }).join('');
-}
-
 function renderTreeSetup(){
   var personRow = treePersonId
     ? '<div id="tree-selected" style="margin:10px 0 4px;padding:10px 14px;background:var(--sp);border-radius:8px;font-size:14px;font-weight:500;color:var(--sepia)">✓ '+esc(name(treePersonId))+'</div>'
@@ -1303,17 +1296,14 @@ function renderTreeSetup(){
 
   var html = '<div class="card">'
     +'<div class="card-title" style="margin-bottom:10px">🌳 Family Tree Visualization</div>'
-    +'<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Search for a person. Use <strong>＋</strong> to expand any branch, <strong>－</strong> to collapse. The generation selector controls how deep auto-expand goes when printing.</p>'
     +'<div class="search-wrap" style="margin-bottom:0">'
-    +'<div class="search-row"><input class="search-input" id="tree-search" placeholder="Type a name to search…" autocomplete="off" value="'+(treePersonId?esc(name(treePersonId)):'')+'"/></div>'
+    +'<div class="search-row"><input class="search-input" id="tree-search" placeholder="Search for a person…" autocomplete="off" value="'+(treePersonId?esc(name(treePersonId)):'')+'"/></div>'
     +'<div class="autocomplete-dropdown" id="tree-dd"></div>'
     +'</div>'
     +personRow
-    +'<div style="margin:14px 0 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-    +'<span style="font-size:13px;color:var(--muted)">PDF depth:</span>'
-    +genBtns()
-    +'</div>'
+    +'<div style="margin-top:14px">'
     +'<button class="btn" id="gen-tree-btn" onclick="doRenderTree()"'+(treePersonId?'':' disabled style="opacity:0.5;cursor:not-allowed"')+'>Generate Tree</button>'
+    +'</div>'
     +'</div>'
     +'<div id="tree-output" style="margin-top:8px"></div>';
 
@@ -1328,7 +1318,7 @@ function renderTreeSetup(){
   });
 }
 
-// ── Build one node — horizontal layout, collapsed by default ───────────────
+// ── Build one family unit — couple side by side, children in a row below ───
 function buildNode(pid, gen){
   var p = T.i[pid]; if(!p) return '';
   var sfams = getSpouseFams(pid);
@@ -1338,53 +1328,50 @@ function buildNode(pid, gen){
 
   var born = [p.bd, p.bp].filter(Boolean).join(', ');
   var nodeClass = 'tree-node' + (gen===0?' root-node':'');
-
-  var spHtml = '';
-  sfams.forEach(function(sf, idx){
-    if(sf.sp && T.i[sf.sp]){
-      var marr = [sf.md, sf.mp].filter(Boolean).join(', ');
-      var div  = sf.dv ? ' div.'+sf.dv : '';
-      spHtml += '<div class="tn-spouse">× '+esc(T.i[sf.sp].n)
-        +(marr?' <span style="font-size:9px">('+esc(marr+(div?' · '+div:''))+')</span>':'')
-        +(div&&!marr?' <span style="font-size:9px;color:var(--rust)">(div. '+esc(sf.dv)+')</span>':'')
-        +'</div>';
-    }
-    if(sfams.length>1 && idx>0) spHtml += '<div class="tn-badge">Marriage '+(idx+1)+'</div>';
-  });
-
   var nodeId = 'tn_'+pid+'_'+gen;
   var childId = 'tc_'+pid+'_'+gen;
 
-  // Horizontal: [card+button] ── [children column]
-  var html = '<div id="'+nodeId+'" class="h-node-row">'
-    +'<div class="h-card-col">'
+  // Spouse cards (⊕ symbol + card for each spouse)
+  var spouseHtml = '';
+  sfams.forEach(function(sf, idx){
+    if(sf.sp && T.i[sf.sp]){
+      var sp = T.i[sf.sp];
+      var spBorn = [sp.bd, sp.bp].filter(Boolean).join(', ');
+      var marr = [sf.md, sf.mp].filter(Boolean).join(', ');
+      spouseHtml += '<div class="marriage-symbol">⊕</div>'
+        +'<div class="tree-node spouse-node" onclick="showPerson(\''+sf.sp+'\')" style="cursor:pointer">'
+        +'<div class="tn-name">'+esc(sp.n)+'</div>'
+        +(spBorn?'<div class="tn-dates">'+esc(spBorn)+'</div>':'')
+        +(marr?'<div class="tn-dates">M · '+esc(marr)+'</div>':'')
+        +'</div>';
+      if(sfams.length>1 && idx>0) spouseHtml += '<div class="tn-badge" style="align-self:center">Marriage '+(idx+1)+'</div>';
+    }
+  });
+
+  var html = '<div id="'+nodeId+'" class="family-unit">'
+    +'<div class="couple-row">'
     +'<div class="'+nodeClass+'" onclick="showPerson(\''+pid+'\')" style="cursor:pointer">'
     +'<div class="tn-name">'+esc(p.n)+'</div>'
     +(born?'<div class="tn-dates">'+esc(born)+'</div>':'')
-    +spHtml
-    +'</div>';
+    +'</div>'
+    +spouseHtml;
 
   if(kids.length){
-    html += '<button class="btn outline" id="ebtn_'+pid+'_'+gen+'" '
-      +'style="font-size:11px;padding:3px 9px;margin-top:3px;" '
-      +'onclick="toggleNode(\''+pid+'\','+gen+',\''+childId+'\',\'ebtn_'+pid+'_'+gen+'\')">＋ '+kids.length+' children</button>';
+    html += '<button class="collapse-btn" id="ebtn_'+pid+'_'+gen+'" '
+      +'onclick="toggleNode(\''+pid+'\','+gen+',\''+childId+'\',\'ebtn_'+pid+'_'+gen+'\')">▶ '+kids.length+' children</button>';
   }
-  html += '</div>'; // close h-card-col
+  html += '</div>'; // close couple-row
 
   if(kids.length){
-    html += '<div id="'+childId+'" style="display:none;flex-direction:row;align-items:flex-start;">'
-      +'<div class="h-connector-h"></div>'
-      +'<div class="h-children-col">';
-    kids.forEach(function(cid){
-      html += '<div style="display:flex;flex-direction:row;align-items:flex-start;">'
-        +'<div class="h-child-stub"></div>'
-        +buildNode(cid, gen+1)
-        +'</div>';
-    });
-    html += '</div></div>'; // close h-children-col + children container
+    html += '<div id="'+childId+'" class="children-section" style="display:none">'
+      +'<div class="connector-v"></div>'
+      +'<div class="gen-label">Children ('+kids.length+')</div>'
+      +'<div class="children-row">';
+    kids.forEach(function(cid){ html += buildNode(cid, gen+1); });
+    html += '</div></div>'; // close children-row + children-section
   }
 
-  html += '</div>'; // close h-node-row
+  html += '</div>'; // close family-unit
   return html;
 }
 
@@ -1400,29 +1387,25 @@ window.toggleNode = function(pid, gen, childId, btnId){
 
   if(childEl.style.display === 'none'){
     childEl.style.display = 'flex';
-    btnEl.textContent = '－ '+kids.length+' children';
+    btnEl.textContent = '▼ '+kids.length+' children';
   } else {
     childEl.style.display = 'none';
-    btnEl.textContent = '＋ '+kids.length+' children';
+    btnEl.textContent = '▶ '+kids.length+' children';
   }
 };
 
-// ── Expand all nodes up to treeGens depth ─────────────────────────────────
+// ── Expand all nodes ───────────────────────────────────────────────────────
 window.expandAllToDepth = function(){
-  // Show all child containers within depth limit
   document.querySelectorAll('[id^="tc_"]').forEach(function(el){
-    var parts = el.id.split('_'); // tc_PID_GEN
+    el.style.display = 'flex';
+    var parts = el.id.split('_');
     var gen = parseInt(parts[parts.length-1]);
-    if(gen < treeGens){
-      el.style.display = 'flex';
-      // Update corresponding button
-      var pid = parts.slice(1, parts.length-1).join('_');
-      var btn = document.getElementById('ebtn_'+pid+'_'+gen);
-      if(btn){
-        var sfams = getSpouseFams(pid);
-        var kcount = sfams.reduce(function(n,sf){return n+sf.c.length;},0);
-        btn.textContent = '－ '+kcount+' children';
-      }
+    var pid = parts.slice(1, parts.length-1).join('_');
+    var btn = document.getElementById('ebtn_'+pid+'_'+gen);
+    if(btn){
+      var sfams = getSpouseFams(pid);
+      var kcount = sfams.reduce(function(n,sf){return n+sf.c.length;},0);
+      btn.textContent = '▼ '+kcount+' children';
     }
   });
 };
@@ -1437,7 +1420,7 @@ window.collapseAll = function(){
     if(btn){
       var sfams = getSpouseFams(pid);
       var kcount = sfams.reduce(function(n,sf){return n+sf.c.length;},0);
-      btn.textContent = '＋ '+kcount+' children';
+      btn.textContent = '▶ '+kcount+' children';
     }
   });
 };
@@ -1456,9 +1439,9 @@ window.doRenderTree = function(){
     +'border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;';
 
   var actionBtns = '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    +'<button id="expand-depth-top" onclick="expandAllToDepth()" class="btn outline" style="font-size:12px;padding:7px 14px;">⊞ Expand '+treeGens+' levels</button>'
+    +'<button onclick="expandAllToDepth()" class="btn outline" style="font-size:12px;padding:7px 14px;">⊞ Expand all</button>'
     +'<button onclick="collapseAll()" class="btn outline" style="font-size:12px;padding:7px 14px;">⊟ Collapse all</button>'
-    +'<button onclick="downloadTreePDF()" class="btn" style="font-size:12px;padding:7px 14px;display:flex;align-items:center;gap:5px;">⬇ Download PDF</button>'
+    +'<button onclick="downloadTreePDF()" class="btn" style="font-size:12px;padding:7px 14px;display:flex;align-items:center;gap:5px;">⬇ Print tree</button>'
     +'</div>';
 
   var barContent = '<div style="font-size:13px;color:var(--muted)">🌳 <strong style="color:var(--sepia)">'
@@ -1470,11 +1453,10 @@ window.doRenderTree = function(){
   html += '</div>';
   el.innerHTML = html;
 
-  // Bottom bar — clone with different ID for expand button
-  var botContent = barContent.replace('expand-depth-top','expand-depth-bot');
+  // Bottom bar
   var bot = document.createElement('div');
   bot.style.cssText = barStyle + 'margin-top:16px;';
-  bot.innerHTML = botContent;
+  bot.innerHTML = barContent;
   el.appendChild(bot);
 };
 
