@@ -1471,37 +1471,6 @@ window.downloadTreePDF = function(){
 
 window.renderTree = window.doRenderTree;
 
-function renderTreeSetup(){
-  var personRow = treePersonId
-    ? '<div id="tree-selected" style="margin:10px 0 4px;padding:10px 14px;background:var(--sp);border-radius:8px;font-size:14px;font-weight:500;color:var(--sepia)">✓ '+esc(name(treePersonId))+'</div>'
-    : '<div id="tree-selected"></div>';
-
-  var html = '<div class="card">'
-    +'<div class="card-title" style="margin-bottom:10px">🌳 Family Tree Visualization</div>'
-    +'<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Search for a person and pick how many generations to pre-load (1–7). Each node shows an <strong>Expand</strong> button to reveal children one level at a time.</p>'
-    +'<div class="search-wrap" style="margin-bottom:0">'
-    +'<div class="search-row"><input class="search-input" id="tree-search" placeholder="Type a name to search…" autocomplete="off" value="'+(treePersonId?esc(name(treePersonId)):'')+'"/></div>'
-    +'<div class="autocomplete-dropdown" id="tree-dd"></div>'
-    +'</div>'
-    +personRow
-    +'<div style="margin:14px 0 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-    +'<span style="font-size:13px;color:var(--muted)">Generations:</span>'
-    +genBtns()
-    +'</div>'
-    +'<button class="btn" id="gen-tree-btn" onclick="doRenderTree()"'+(treePersonId?'':' disabled style="opacity:0.5;cursor:not-allowed"')+'>Generate Tree</button>'
-    +'</div>'
-    +'<div id="tree-output" style="margin-top:8px"></div>';
-
-  setContent(html);
-
-  makeSearchWidget('tree-search','tree-dd', function(id, nm){
-    treePersonId = id;
-    var sel = document.getElementById('tree-selected');
-    if(sel) sel.innerHTML = '✓ '+esc(nm);
-    var btn = document.getElementById('gen-tree-btn');
-    if(btn){ btn.removeAttribute('disabled'); btn.style.opacity='1'; btn.style.cursor='pointer'; }
-  });
-}
 
 // ── SUBMIT MISSING PERSON ────────────────────────────────────────────────
 var uploadedFiles = [];
