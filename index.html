@@ -110,8 +110,9 @@ header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;alig
 .gen-section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;}
 .focus-section{border-color:var(--sepia);background:var(--sp);}
 .sec-toggle{background:none;border:1px solid var(--border);border-radius:4px;padding:1px 8px;font-size:12px;cursor:pointer;color:var(--muted);line-height:1.4;}
-.families-row{display:flex;flex-direction:row;align-items:flex-start;gap:16px;flex-wrap:wrap;justify-content:center;}
+.families-row{display:flex;flex-direction:row;align-items:flex-start;gap:14px;flex-wrap:wrap;justify-content:center;}
 .family-block{display:flex;flex-direction:column;align-items:center;}
+.family-card{display:flex;flex-direction:column;align-items:center;border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--bg);}
 .couple-row{display:flex;flex-direction:row;align-items:center;gap:4px;}
 .marriage-symbol{font-size:15px;color:var(--sepia);flex-shrink:0;padding:0 2px;}
 .collapse-btn{padding:3px 11px;font-size:11px;background:var(--paper);border:1px solid var(--border);border-radius:20px;cursor:pointer;color:var(--sepia);white-space:nowrap;flex-shrink:0;transition:background 0.15s;}
@@ -1454,7 +1455,7 @@ function renderFamilyBlock(pid){
     childrenHtml+='</div></div>';
   }
 
-  return '<div class="family-block">'
+  return '<div class="family-card">'
     +'<div class="couple-row">'+buildPersonCard(pid)+buildSpouseCards(sfams)+toggleBtn+'</div>'
     +childrenHtml
     +'</div>';
