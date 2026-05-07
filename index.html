@@ -189,11 +189,9 @@ header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;alig
   .back-btn, .chips, .stats-grid, #loading,
   .home-btn, .hbadge { display: none !important; }
 
-  /* Hide all buttons in tree — but NOT the expanded content */
-  #tree-output button { display: none !important; }
-
-  /* Print exactly what's visible — do NOT force-show hidden nodes */
-  /* [id^="tc_"] stays as-is: display:none means hidden, display:block means shown */
+  /* Hide action bar buttons only — keep collapse-btn visible so ▶ N children shows in print */
+  #tree-output .btn { display: none !important; }
+  .sec-toggle { display: none !important; }
 
   body { background: white !important; }
   #app { display: block !important; }
@@ -231,10 +229,6 @@ header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;alig
 
   /* Expand tree fully for print */
   .tree-container { overflow: visible !important; }
-  [id^="fc_"] { display: flex !important; }
-  .collapse-btn { display: none !important; }
-  .sec-toggle { display: none !important; }
-  [id^="sc-"] { display: flex !important; }
 
   @page {
     margin: 15mm;
