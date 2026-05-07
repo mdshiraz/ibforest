@@ -115,6 +115,9 @@ header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;alig
 .family-card{display:flex;flex-direction:column;align-items:center;border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--bg);}
 .couple-row{display:flex;flex-direction:row;align-items:center;gap:4px;}
 .marriage-symbol{font-size:15px;color:var(--sepia);flex-shrink:0;padding:0 2px;}
+.marriage-symbol.divorced{color:var(--rust,#a0522d);font-size:14px;}
+.tree-node.spouse-node.divorced-node{border-color:#c0856a;border-style:dashed;}
+.div-badge{font-size:9px;color:var(--rust,#a0522d);margin-top:3px;display:inline-block;}
 .collapse-btn{padding:3px 11px;font-size:11px;background:var(--paper);border:1px solid var(--border);border-radius:20px;cursor:pointer;color:var(--sepia);white-space:nowrap;flex-shrink:0;transition:background 0.15s;}
 .collapse-btn:hover{background:var(--sp);}
 .connector-v{width:2px;height:12px;background:var(--border);}
@@ -1335,7 +1338,7 @@ function buildPersonCard(pid, extraClass){
     +'</div>';
 }
 
-// ── Atom: ⊕ + spouse cards for all marriages of pid ──────────────────────
+// ── Atom: ⊕ / ⊗ + spouse cards for all marriages of pid ─────────────────
 function buildSpouseCards(sfams){
   var html = '';
   sfams.forEach(function(sf){
@@ -1343,11 +1346,16 @@ function buildSpouseCards(sfams){
       var sp = T.i[sf.sp];
       var spBorn = [sp.bd, sp.bp].filter(Boolean).join(', ');
       var marr = [sf.md, sf.mp].filter(Boolean).join(', ');
-      html += '<div class="marriage-symbol">⊕</div>'
-        +'<div class="tree-node spouse-node" onclick="showPerson(\''+sf.sp+'\')" style="cursor:pointer">'
+      var isDivorced = !!sf.dv;
+      var symbol = isDivorced ? '⊗' : '⊕';
+      var symClass = 'marriage-symbol' + (isDivorced ? ' divorced' : '');
+      var nodeClass = 'tree-node spouse-node' + (isDivorced ? ' divorced-node' : '');
+      html += '<div class="'+symClass+'" title="'+(isDivorced?'Divorced '+esc(sf.dv):'Married')+'">'+symbol+'</div>'
+        +'<div class="'+nodeClass+'" onclick="showPerson(\''+sf.sp+'\')" style="cursor:pointer">'
         +'<div class="tn-name">'+esc(sp.n)+'</div>'
         +(spBorn?'<div class="tn-dates">'+esc(spBorn)+'</div>':'')
         +(marr?'<div class="tn-dates">M · '+esc(marr)+'</div>':'')
+        +(isDivorced?'<div class="div-badge">div. '+esc(sf.dv)+'</div>':'')
         +'</div>';
     }
   });
