@@ -520,7 +520,7 @@ function renderDashboard(events) {
       var who = d.user || d.by || d.name || '';
       if(who) user = ' <span style="font-size:11px;padding:1px 7px;background:var(--sepia-pale);border-radius:10px;color:var(--sepia);margin-left:4px;">👤 '+esc(who)+'</span>';
       switch(e.event_type){
-        case 'login':         label = 'Logged in: <strong>'+esc(d.name||'')+'</strong>'+(d.label?' ('+esc(d.label)+')':'')+(d.new_user?' <span style="font-size:10px;padding:1px 6px;background:#e8f5e9;color:#2e7d32;border-radius:8px">new</span>':''); user=''; break;
+        case 'login':         label = 'Logged in: <strong>'+esc(d.name||'')+'</strong>'+(d.device?' <span style="font-size:11px;color:var(--muted);margin-left:6px;">📱 '+esc(d.device)+'</span>':'')+(d.label?' ('+esc(d.label)+')':'')+(d.new_user?' <span style="font-size:10px;padding:1px 6px;background:#e8f5e9;color:#2e7d32;border-radius:8px">new</span>':''); user=''; break;
         case 'login_failed':  label = 'Failed login attempt by <strong>'+esc(d.name||'unknown')+'</strong>'; user=''; break;
         case 'name_entered':  label = '<strong>'+esc(d.name||'')+'</strong> entered their name'; user=''; break;
         case 'password_generated': label = 'Password generated for <strong>'+esc(d.name||'')+'</strong> — <span style="color:var(--rust)">not yet logged in</span>'; user=''; break;

@@ -334,6 +334,40 @@ function getSession(){
   if(!s){s='s_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);sessionStorage.setItem(k,s);}
   return s;
 }
+function getDeviceInfo(){
+  var ua = navigator.userAgent;
+  var device = 'Unknown device';
+  // Detect specific device models / families
+  if(/iPhone/.test(ua)){
+    var m = ua.match(/iPhone OS ([\d_]+)/);
+    device = 'iPhone' + (m ? ' (iOS '+m[1].replace(/_/g,'.')+')' : '');
+  } else if(/iPad/.test(ua)){
+    device = 'iPad';
+  } else if(/Android/.test(ua)){
+    // Try to extract model name
+    var m2 = ua.match(/Android [^;]+;\s*([^)]+)\)/);
+    device = m2 ? m2[1].trim() : 'Android device';
+  } else if(/Windows Phone/.test(ua)){
+    device = 'Windows Phone';
+  } else if(/Macintosh/.test(ua) && /Mobile/.test(ua)){
+    device = 'Mac (mobile)';
+  } else if(/Macintosh|Mac OS X/.test(ua)){
+    device = 'Mac';
+  } else if(/Windows/.test(ua)){
+    device = 'Windows PC';
+  } else if(/Linux/.test(ua)){
+    device = 'Linux';
+  }
+  // Append browser hint
+  var browser = '';
+  if(/CriOS/.test(ua))       browser = 'Chrome iOS';
+  else if(/FxiOS/.test(ua))  browser = 'Firefox iOS';
+  else if(/EdgA?\//.test(ua))browser = 'Edge';
+  else if(/Chrome/.test(ua)) browser = 'Chrome';
+  else if(/Firefox/.test(ua))browser = 'Firefox';
+  else if(/Safari/.test(ua)) browser = 'Safari';
+  return browser ? device + ' · ' + browser : device;
+}
 
 // ── Utility — must be defined before any use ──────────────────────────────
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -544,7 +578,7 @@ window.forgotPassword = function(uname){
 window.completeLogin = async function(uname, pwd, isNew){
   currentUser = {name:uname};
   sessionStorage.setItem('ibf_auth', JSON.stringify(currentUser));
-  logEvent('login', {name:uname, new_user:isNew});
+  logEvent('login', {name:uname, new_user:isNew, device:getDeviceInfo()});
 
   // Update visitor record — increment visit_count properly
   var sid = getSession();
